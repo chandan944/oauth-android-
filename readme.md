@@ -1,3 +1,63 @@
+{
+  "expo": {
+    "name": "self-help-new",
+    "slug": "self-help-new",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.chandanprajapati7.selfhelpnew"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "@react-native-google-signin/google-signin"
+    ],
+    "owner": "username007612",
+    "extra": {
+      "eas": {
+        "projectId": "d0246734-770e-46d5-ab8e-109e46c992b9"
+      }
+    }
+  }
+}
+{
+  "cli": {
+    "version": ">= 16.28.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
 import React, { useEffect, useState } from 'react';
 import { 
   View, 
@@ -298,4 +358,146 @@ const styles = StyleSheet.create({
     color: '#555',
     textAlign: 'center',
   },
+});import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View } from 'react-native';
+// import GoogleSignInButton from './GoogleSignInButton';
+
+export default function App() {
+  return (
+    <View style={styles.container}>
+      <Text>Open up App.js to start working on your app!</Text>
+      <StatusBar style="auto" />
+      <GoogleSignInButton/>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
+PS C:\Users\lenovo\Desktop\test-eas\self-help-new> eas credentials
+√ Select platform » Android
+√ Which build profile do you want to configure? » development
+✔ Using build profile: development
+Android Credentials   
+Project                 self-help-new
+Application Identifier  com.chandanprajapati7.selfhelpnew
+
+Push Notifications (FCM Legacy)
+  None assigned yet
+
+Push Notifications (FCM V1): Google Service Account Key For FCM V1
+  None assigned yet
+
+Submissions: Google Service Account Key for Play Store Submissions
+  None assigned yet
+
+Configuration: Build Credentials ZFP7K209dJ (Default)
+Keystore
+Type                JKS
+Key Alias           3009f306ec9bf6af548b44536b467030
+MD5 Fingerprint     7F:F8:80:4C:CA:FA:73:DE:3E:4D:B6:F5:A2:69:13:22
+SHA1 Fingerprint    4A:16:99:8D:56:12:2C:BB:75:D9:C9:F9:54:A9:68:C1:F1:5F:90:5D
+SHA256 Fingerprint  E6:F0:7E:2B:87:C4:51:B7:46:51:1D:D9:80:A2:78:C6:05:87:E0:0A:B1:7A:18:3A:5C:4C:BB:E5:05:B4:E1:D2
+Updated             28 minutes ago
+
+√ What do you want to do? » Keystore: Manage everything needed to build your project
+Android Credentials   
+Project                 self-help-new
+Application Identifier  com.chandanprajapati7.selfhelpnew
+
+Push Notifications (FCM Legacy)  
+  None assigned yet
+
+Push Notifications (FCM V1): Google Service Account Key For FCM V1
+  None assigned yet
+
+Submissions: Google Service Account Key for Play Store Submissions
+  None assigned yet
+
+Configuration: Build Credentials ZFP7K209dJ (Default)
+Keystore
+Type                JKS
+Key Alias           3009f306ec9bf6af548b44536b467030
+MD5 Fingerprint     7F:F8:80:4C:CA:FA:73:DE:3E:4D:B6:F5:A2:69:13:22
+SHA1 Fingerprint    4A:16:99:8D:56:12:2C:BB:75:D9:C9:F9:54:A9:68:C1:F1:5F:90:5D
+SHA256 Fingerprint  E6:F0:7E:2B:87:C4:51:B7:46:51:1D:D9:80:A2:78:C6:05:87:E0:0A:B1:7A:18:3A:5C:4C:BB:E5:05:B4:E1:D2
+Updated             31 minutes ago
+
+√ What do you want to do? » Set up a new keystore
+√ Assign a name to your build credentials: ... Build Credentials YvkENuA-Hx
+√ Do you want to set this as your default build credentials? ... yes
+√ Generate a new Android Keystore? ... yes
+✔ Created keystore
+✔ Created Android build credentials Build Credentials YvkENuA-Hx
+Press any key to continue...
+
+
+Android Credentials     
+Project                 self-help-new
+Application Identifier  com.chandanprajapati7.selfhelpnew
+
+Push Notifications (FCM Legacy)
+  None assigned yet
+
+Push Notifications (FCM V1): Google Service Account Key For FCM V1
+  None assigned yet
+
+Submissions: Google Service Account Key for Play Store Submissions
+  None assigned yet
+
+Configuration: Build Credentials YvkENuA-Hx (Default)
+Keystore
+Type                JKS
+Key Alias           8aa4188a294d621f4fb81c6f30b97e42
+MD5 Fingerprint     71:31:71:F5:AE:11:0E:A7:69:9F:52:E4:74:52:18:12
+SHA1 Fingerprint    B8:83:B6:5C:8B:38:A8:B9:A7:22:C4:5A:D2:43:64:5C:DB:71:D3:CB
+SHA256 Fingerprint  B1:41:3B:77:01:43:B7:19:29:5E:2A:54:C7:76:86:0C:D0:3B:41:58:D5:5C:29:C9:56:4E:A8:C3:59:0F:03:79
+Updated             4 seconds ago
+
+Configuration: Build Credentials ZFP7K209dJ
+Keystore
+Type                JKS
+Key Alias           3009f306ec9bf6af548b44536b467030
+MD5 Fingerprint     7F:F8:80:4C:CA:FA:73:DE:3E:4D:B6:F5:A2:69:13:22
+SHA1 Fingerprint    4A:16:99:8D:56:12:2C:BB:75:D9:C9:F9:54:A9:68:C1:F1:5F:90:5D
+SHA256 Fingerprint  E6:F0:7E:2B:87:C4:51:B7:46:51:1D:D9:80:A2:78:C6:05:87:E0:0A:B1:7A:18:3A:5C:4C:BB:E5:05:B4:E1:D2
+Updated             32 minutes ago
+
+√ What do you want to do? » Go back
+Android Credentials   
+Project                 self-help-new
+Application Identifier  com.chandanprajapati7.selfhelpnew
+
+Push Notifications (FCM Legacy)
+  None assigned yet
+
+Push Notifications (FCM V1): Google Service Account Key For FCM V1  
+  None assigned yet
+
+Submissions: Google Service Account Key for Play Store Submissions  
+  None assigned yet
+
+Configuration: Build Credentials YvkENuA-Hx (Default)  
+Keystore  
+Type                JKS
+Key Alias           8aa4188a294d621f4fb81c6f30b97e42
+MD5 Fingerprint     71:31:71:F5:AE:11:0E:A7:69:9F:52:E4:74:52:18:12
+SHA1 Fingerprint    B8:83:B6:5C:8B:38:A8:B9:A7:22:C4:5A:D2:43:64:5C:DB:71:D3:CB
+Updated             4 minutes ago
+
+Configuration: Build Credentials ZFP7K209dJ
+Keystore
+Type                JKS
+Key Alias           3009f306ec9bf6af548b44536b467030
+MD5 Fingerprint     7F:F8:80:4C:CA:FA:73:DE:3E:4D:B6:F5:A2:69:13:22
+SHA1 Fingerprint    4A:16:99:8D:56:12:2C:BB:75:D9:C9:F9:54:A9:68:C1:F1:5F:90:5D
+SHA256 Fingerprint  E6:F0:7E:2B:87:C4:51:B7:46:51:1D:D9:80:A2:78:C6:05:87:E0:0A:B1:7A:18:3A:5C:4C:BB:E5:05:B4:E1:D2
+Updated             36 minutes ago
+
+√ What do you want to do? » Exit
