@@ -27,10 +27,12 @@ const DiaryFeedScreen = ({ navigation }) => {
 
   const loadDiaries = async () => {
     try {
+      // ✅ This endpoint only returns PUBLIC diaries from backend
       const response = await getPublicDiaries(page, 10);
+      console.log('📖 Public diaries loaded:', response.content?.length || 0);
       setDiaries(response.content || []);
     } catch (error) {
-      console.error("Error loading diaries:", error);
+      console.error("Error loading public diaries:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -70,6 +72,12 @@ const DiaryFeedScreen = ({ navigation }) => {
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.content}>{truncateText(item.goodThings, 150)}</Text>
 
+      {/* ✅ Public badge indicator */}
+      <View style={styles.publicBadgeContainer}>
+        <Ionicons name="globe-outline" size={14} color={COLORS.success} />
+        <Text style={styles.publicBadgeText}>Public</Text>
+      </View>
+
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionButton}>
           <Ionicons name="heart-outline" size={20} color={COLORS.grey} />
@@ -101,6 +109,14 @@ const DiaryFeedScreen = ({ navigation }) => {
         >
           <Ionicons name="add" size={24} color={COLORS.white} />
         </TouchableOpacity>
+      </View>
+
+      {/* ✅ Tab info showing current view */}
+      <View style={styles.viewInfo}>
+        <Ionicons name="globe" size={20} color={COLORS.primary} />
+        <Text style={styles.viewInfoText}>
+          Viewing Public Diaries from Community
+        </Text>
       </View>
 
       <FlatList
@@ -164,6 +180,22 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  viewInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.success + "10",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  viewInfoText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: "500",
+  },
   list: {
     padding: 16,
   },
@@ -220,7 +252,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textLight,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  publicBadgeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: COLORS.success + "20",
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  publicBadgeText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.success,
   },
   actions: {
     flexDirection: "row",

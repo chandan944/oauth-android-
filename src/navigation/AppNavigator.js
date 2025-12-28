@@ -2,7 +2,7 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../utils/colors";
 import { ActivityIndicator, View } from "react-native";
@@ -202,6 +202,7 @@ const MainTabs = () => (
       tabBarStyle: {
         paddingBottom: 5,
         paddingTop: 5,
+        marginBottom:20,
         height: 60,
         backgroundColor: COLORS.white,
         borderTopWidth: 1,

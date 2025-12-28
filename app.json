@@ -29,10 +29,10 @@
     "plugins": [
       "@react-native-google-signin/google-signin"
     ],
-    "owner": "username007612",
+    "owner": "chandanprajapati6307",
     "extra": {
       "eas": {
-        "projectId": "d0246734-770e-46d5-ab8e-109e46c992b9"
+        "projectId": "dec8a2c4-771d-4803-9759-f6549b8895e6"
       }
     }
   }

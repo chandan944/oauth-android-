@@ -25,12 +25,22 @@ const MyDiariesScreen = ({ navigation }) => {
     loadDiaries();
   }, []);
 
+  // ✅ Reload when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadDiaries();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const loadDiaries = async () => {
     try {
+      // ✅ This endpoint returns ONLY the logged-in user's diaries (both public and private)
       const response = await getMyDiaries(0, 10);
+      console.log('📝 My diaries loaded:', response.content?.length || 0);
       setDiaries(response.content || []);
     } catch (error) {
-      console.error("Error loading diaries:", error);
+      console.error("Error loading my diaries:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -81,7 +91,16 @@ const MyDiariesScreen = ({ navigation }) => {
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.content}>{truncateText(item.goodThings, 150)}</Text>
 
+      {/* ✅ Show bad things if they exist */}
+      {item.badThings && (
+        <View style={styles.challengesSection}>
+          <Text style={styles.challengesLabel}>Challenges:</Text>
+          <Text style={styles.challengesText}>{truncateText(item.badThings, 100)}</Text>
+        </View>
+      )}
+
       <View style={styles.footer}>
+        {/* ✅ Visibility badge - shows PUBLIC or PRIVATE */}
         <View
           style={[
             styles.badge,
@@ -109,6 +128,17 @@ const MyDiariesScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      {/* ✅ Header showing current view */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Ionicons name="person" size={20} color={COLORS.primary} />
+          <Text style={styles.headerText}>My Personal Diaries</Text>
+        </View>
+        <Text style={styles.headerSubtext}>
+          {diaries.length} {diaries.length === 1 ? 'entry' : 'entries'}
+        </Text>
+      </View>
+
       <FlatList
         data={diaries}
         renderItem={renderDiary}
@@ -133,6 +163,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  header: {
+    padding: 16,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  headerText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  headerSubtext: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginLeft: 28,
   },
   list: {
     padding: 16,
@@ -169,7 +221,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textLight,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  challengesSection: {
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: COLORS.warning + "10",
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.warning,
+  },
+  challengesLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.warning,
+    marginBottom: 4,
+  },
+  challengesText: {
+    fontSize: 13,
+    color: COLORS.text,
+    lineHeight: 18,
   },
   footer: {
     flexDirection: "row",
