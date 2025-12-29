@@ -7,9 +7,8 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-  Platform,
+  Modal,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { createGoal } from '../../services/goalService';
 import Button from '../../components/common/Button';
 import { COLORS } from '../../utils/colors';
@@ -23,6 +22,22 @@ const CreateGoalScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const priorities = ['Low', 'Medium', 'High'];
+
+  // Generate date options (next 365 days)
+  const generateDateOptions = () => {
+    const options = [];
+    const today = new Date();
+    
+    for (let i = 1; i <= 365; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      options.push(date);
+    }
+    
+    return options;
+  };
+
+  const dateOptions = generateDateOptions();
 
   // Format date as YYYY-MM-DD for backend
   const formatDate = (date) => {
@@ -41,11 +56,30 @@ const CreateGoalScreen = ({ navigation }) => {
     });
   };
 
-  const onDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS
-    if (selectedDate) {
-      setTargetDate(selectedDate);
-    }
+  // Get relative date string (Tomorrow, In 7 days, etc.)
+  const getRelativeDateString = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const targetDateCopy = new Date(date);
+    targetDateCopy.setHours(0, 0, 0, 0);
+    
+    const diffTime = targetDateCopy - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays === 7) return 'In 1 week';
+    if (diffDays === 14) return 'In 2 weeks';
+    if (diffDays === 30) return 'In 1 month';
+    if (diffDays === 90) return 'In 3 months';
+    if (diffDays === 180) return 'In 6 months';
+    if (diffDays === 365) return 'In 1 year';
+    
+    return `In ${diffDays} days`;
+  };
+
+  const handleDateSelect = (date) => {
+    setTargetDate(date);
+    setShowDatePicker(false);
   };
 
   const handleCreate = async () => {
@@ -96,6 +130,22 @@ const CreateGoalScreen = ({ navigation }) => {
     }
   };
 
+  // Quick date presets
+  const quickPresets = [
+    { label: 'Tomorrow', days: 1 },
+    { label: '1 Week', days: 7 },
+    { label: '2 Weeks', days: 14 },
+    { label: '1 Month', days: 30 },
+    { label: '3 Months', days: 90 },
+    { label: '6 Months', days: 180 },
+  ];
+
+  const handleQuickPreset = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    setTargetDate(date);
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.form}>
@@ -112,6 +162,20 @@ const CreateGoalScreen = ({ navigation }) => {
         />
 
         <Text style={styles.label}>Target Date *</Text>
+        
+        {/* Quick Presets */}
+        <View style={styles.presetsContainer}>
+          {quickPresets.map((preset) => (
+            <TouchableOpacity
+              key={preset.days}
+              style={styles.presetButton}
+              onPress={() => handleQuickPreset(preset.days)}
+            >
+              <Text style={styles.presetText}>{preset.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <TouchableOpacity
           style={styles.datePickerButton}
           onPress={() => setShowDatePicker(true)}
@@ -119,17 +183,63 @@ const CreateGoalScreen = ({ navigation }) => {
           <Text style={styles.datePickerText}>
             📅 {formatDisplayDate(targetDate)}
           </Text>
+          <Text style={styles.relativeDateText}>
+            {getRelativeDateString(targetDate)}
+          </Text>
         </TouchableOpacity>
 
-        {showDatePicker && (
-          <DateTimePicker
-            value={targetDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={onDateChange}
-            minimumDate={new Date()}
-          />
-        )}
+        {/* Custom Date Picker Modal */}
+        <Modal
+          visible={showDatePicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Target Date</Text>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={styles.closeButton}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.dateList}>
+                {dateOptions.filter((_, index) => 
+                  // Show: Tomorrow, then every 7 days for first 90 days, then every 30 days
+                  index === 0 || 
+                  (index < 90 && index % 7 === 0) || 
+                  (index >= 90 && index % 30 === 0)
+                ).map((date, index) => {
+                  const isSelected = formatDate(date) === formatDate(targetDate);
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.dateOption,
+                        isSelected && styles.dateOptionSelected
+                      ]}
+                      onPress={() => handleDateSelect(date)}
+                    >
+                      <Text style={[
+                        styles.dateOptionText,
+                        isSelected && styles.dateOptionTextSelected
+                      ]}>
+                        {formatDisplayDate(date)}
+                      </Text>
+                      <Text style={[
+                        styles.dateOptionSubtext,
+                        isSelected && styles.dateOptionSubtextSelected
+                      ]}>
+                        {getRelativeDateString(date)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
 
         <Text style={styles.label}>Priority</Text>
         <View style={styles.priorityContainer}>
@@ -205,6 +315,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  presetsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    gap: 8,
+  },
+  presetButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary + '15',
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
+  },
+  presetText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
   datePickerButton: {
     backgroundColor: COLORS.white,
     padding: 16,
@@ -218,6 +347,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.text,
     fontWeight: '500',
+  },
+  relativeDateText: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginTop: 4,
   },
   textArea: {
     minHeight: 100,
@@ -248,6 +382,67 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   priorityTextActive: {
+    color: COLORS.primary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  closeButton: {
+    fontSize: 24,
+    color: COLORS.textLight,
+    fontWeight: '300',
+  },
+  dateList: {
+    padding: 16,
+  },
+  dateOption: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  dateOptionSelected: {
+    backgroundColor: COLORS.primary + '20',
+    borderColor: COLORS.primary,
+  },
+  dateOptionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  dateOptionTextSelected: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  dateOptionSubtext: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginTop: 4,
+  },
+  dateOptionSubtextSelected: {
     color: COLORS.primary,
   },
 });
