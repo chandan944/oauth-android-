@@ -19,6 +19,7 @@ import MoodAnalyticsScreen from "../screens/Analytics/MoodAnalyticsScreen";
 import ProgressDashboardScreen from "../screens/Analytics/ProgressDashboardScreen";
 import MessagesScreen from "../screens/Messages/MessagesScreen";
 import MessageDetailScreen from "../screens/Messages/MessageDetailScreen";
+import CreateMessageScreen from "../screens/Messages/CreateMessageScreen";
 import HabitsScreen from "../screens/Habits/HabitsScreen";
 import CreateHabitScreen from "../screens/Habits/CreateHabitScreen";
 import HabitDetailScreen from "../screens/Habits/HabitDetailScreen";
@@ -30,13 +31,13 @@ import ProfileScreen from "../screens/Profile/ProfileScreen";
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Auth Stack
 // Auth Stack - Only Login (No Register)
 const AuthStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Login" component={LoginScreen} />
   </Stack.Navigator>
 );
+
 // Diary Stack
 const DiaryStack = () => (
   <Stack.Navigator
@@ -86,7 +87,7 @@ const AnalyticsStack = () => (
   </Stack.Navigator>
 );
 
-// Messages Stack
+// ✅ FIXED: Messages Stack - Correct Screen Order
 const MessagesStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -95,15 +96,25 @@ const MessagesStack = () => (
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
+    {/* ✅ MAIN SCREEN FIRST - This is what shows when tab is clicked */}
     <Stack.Screen
       name="MessagesList"
       component={MessagesScreen}
       options={{ title: "📢 Messages" }}
     />
+    
+    {/* ✅ DETAIL SCREEN - For viewing individual messages */}
     <Stack.Screen
       name="MessageDetail"
       component={MessageDetailScreen}
       options={{ title: "💬 Message" }}
+    />
+    
+    {/* ✅ CREATE SCREEN LAST - Only accessible via FAB button navigation */}
+    <Stack.Screen
+      name="CreateMessage"
+      component={CreateMessageScreen}
+      options={{ title: "✍️ Create Message" }}
     />
   </Stack.Navigator>
 );
@@ -202,7 +213,7 @@ const MainTabs = () => (
       tabBarStyle: {
         paddingBottom: 5,
         paddingTop: 5,
-        marginBottom:20,
+        marginBottom: 20,
         height: 60,
         backgroundColor: COLORS.white,
         borderTopWidth: 1,

@@ -1,3 +1,4 @@
+// screens/Diary/DiaryFeedScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -14,12 +15,12 @@ import EmptyState from "../../components/common/EmptyState";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS, MOOD_EMOJIS, MOOD_COLORS } from "../../utils/colors";
 import { formatDate, truncateText } from "../../utils/helpers";
+import { formatText } from "../../utils/formatText";
 
 const DiaryFeedScreen = ({ navigation }) => {
   const [diaries, setDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(0);
 
   useEffect(() => {
     loadDiaries();
@@ -27,12 +28,10 @@ const DiaryFeedScreen = ({ navigation }) => {
 
   const loadDiaries = async () => {
     try {
-      // ✅ This endpoint only returns PUBLIC diaries from backend
-      const response = await getPublicDiaries(page, 10);
-      console.log('📖 Public diaries loaded:', response.content?.length || 0);
+      const response = await getPublicDiaries(0, 10);
       setDiaries(response.content || []);
     } catch (error) {
-      console.error("Error loading public diaries:", error);
+      console.error("Error loading diaries:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -41,7 +40,6 @@ const DiaryFeedScreen = ({ navigation }) => {
 
   const onRefresh = () => {
     setRefreshing(true);
-    setPage(0);
     loadDiaries();
   };
 
@@ -59,6 +57,7 @@ const DiaryFeedScreen = ({ navigation }) => {
             <Text style={styles.date}>{formatDate(item.entryDate)}</Text>
           </View>
         </View>
+
         <View
           style={[
             styles.moodBadge,
@@ -70,24 +69,19 @@ const DiaryFeedScreen = ({ navigation }) => {
       </View>
 
       <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.content}>{truncateText(item.goodThings, 150)}</Text>
+      <Text style={styles.content}>
+        {formatText(truncateText(item.goodThings, 1000))}
+      </Text>
 
-      {/* ✅ Public badge indicator */}
-      <View style={styles.publicBadgeContainer}>
-        <Ionicons name="globe-outline" size={14} color={COLORS.success} />
-        <Text style={styles.publicBadgeText}>Public</Text>
-      </View>
-
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="heart-outline" size={20} color={COLORS.grey} />
-          <Text style={styles.actionText}>Like</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="chatbubble-outline" size={20} color={COLORS.grey} />
-          <Text style={styles.actionText}>Comment</Text>
-        </TouchableOpacity>
-      </View>
+      {/* ✅ Show bad things if they exist */}
+      {item.badThings && (
+        <View style={styles.challengesSection}>
+          <Text style={styles.challengesLabel}>Challenges:</Text>
+          <Text style={styles.challengesText}>
+            {formatText(truncateText(item.badThings, 1000))}
+          </Text>
+        </View>
+      )}
     </Card>
   );
 
@@ -109,14 +103,6 @@ const DiaryFeedScreen = ({ navigation }) => {
         >
           <Ionicons name="add" size={24} color={COLORS.white} />
         </TouchableOpacity>
-      </View>
-
-      {/* ✅ Tab info showing current view */}
-      <View style={styles.viewInfo}>
-        <Ionicons name="globe" size={20} color={COLORS.primary} />
-        <Text style={styles.viewInfoText}>
-          Viewing Public Diaries from Community
-        </Text>
       </View>
 
       <FlatList
@@ -143,6 +129,111 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  header: {
+    padding: 16,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  headerText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  headerSubtext: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginLeft: 28,
+  },
+  list: {
+    padding: 16,
+  },
+  diaryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  moodBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  moodEmoji: {
+    fontSize: 24,
+  },
+  date: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 14,
+    color: COLORS.textLight,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  content: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  challengesSection: {
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: COLORS.warning + "10",
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.warning,
+  },
+  challengesLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.warning,
+    marginBottom: 4,
+  },
+  challengesText: {
+    fontSize: 13,
+    color: COLORS.text,
+    lineHeight: 18,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  publicBadge: {
+    backgroundColor: COLORS.success,
+  },
+  privateBadge: {
+    backgroundColor: COLORS.grey,
+  },
+  badgeText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.white,
   },
   topBar: {
     flexDirection: "row",
@@ -179,22 +270,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
-  },
-  viewInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: COLORS.success + "10",
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  viewInfoText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: COLORS.text,
-    fontWeight: "500",
   },
   list: {
     padding: 16,
@@ -252,23 +327,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textLight,
     lineHeight: 20,
-    marginBottom: 12,
-  },
-  publicBadgeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    backgroundColor: COLORS.success + "20",
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  publicBadgeText: {
-    marginLeft: 4,
-    fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.success,
+    marginBottom: 16,
   },
   actions: {
     flexDirection: "row",

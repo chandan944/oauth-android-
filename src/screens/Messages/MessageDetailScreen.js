@@ -16,7 +16,8 @@ import Button from "../../components/common/Button";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
 import { formatDate, formatTime } from "../../utils/helpers";
-
+import { formatText } from "../../utils/formatText";
+import { truncateText } from "../../utils/helpers";
 const MessageDetailScreen = ({ route }) => {
   const { messageId } = route.params;
   const [message, setMessage] = useState(null);
@@ -83,13 +84,17 @@ const MessageDetailScreen = ({ route }) => {
               <Ionicons name="megaphone" size={32} color={COLORS.primary} />
             </View>
             <View style={styles.headerInfo}>
-              <Text style={styles.title}>{message.title}</Text>
-              <Text style={styles.author}>By {message.authorEmail}</Text>
+              <Text style={styles.content}>
+                {formatText(truncateText(message.title, 1000))}
+              </Text>
+
               <Text style={styles.date}>{formatDate(message.createdAt)}</Text>
             </View>
           </View>
 
-          <Text style={styles.content}>{message.content}</Text>
+          <Text style={styles.content}>
+            {formatText(truncateText(message.content, 1000))}
+          </Text>
         </Card>
 
         <Card>
@@ -100,12 +105,13 @@ const MessageDetailScreen = ({ route }) => {
           {message.comments.map((comment) => (
             <View key={comment.id} style={styles.comment}>
               <View style={styles.commentHeader}>
-                <Text style={styles.commentAuthor}>{comment.authorEmail}</Text>
                 <Text style={styles.commentDate}>
                   {formatTime(comment.createdAt)}
                 </Text>
               </View>
-              <Text style={styles.commentContent}>{comment.content}</Text>
+              <Text style={styles.content}>
+                {formatText(truncateText(comment.content, 1000))}
+              </Text>
             </View>
           ))}
         </Card>

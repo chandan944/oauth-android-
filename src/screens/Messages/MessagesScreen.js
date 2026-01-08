@@ -6,22 +6,34 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { useAuth } from "../../context/AuthContext"; // ✅ Use Auth Context
 import { getAllMessages } from "../../services/messageService";
 import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
 import { formatDate, truncateText } from "../../utils/helpers";
+import { formatText } from "../../utils/formatText";
 
 const MessagesScreen = ({ navigation }) => {
+  const { user } = useAuth(); // ✅ Get user from context
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // ✅ Check if user is admin directly from user object
+  const isAdmin = user?.role === "ADMIN";
+
   useEffect(() => {
     loadMessages();
+    
+    // ✅ Debug log to verify role
+    console.log("🔍 User Info:", user);
+    console.log("🔍 User Role:", user?.role);
+    console.log("🔍 Is Admin:", isAdmin);
   }, []);
 
   const loadMessages = async () => {
@@ -30,6 +42,7 @@ const MessagesScreen = ({ navigation }) => {
       setMessages(response.content || []);
     } catch (error) {
       console.error("Error loading messages:", error);
+      Alert.alert("Error", "Failed to load messages");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -52,12 +65,14 @@ const MessagesScreen = ({ navigation }) => {
           <Ionicons name="megaphone" size={24} color={COLORS.primary} />
         </View>
         <View style={styles.headerInfo}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.author}>By {item.authorEmail}</Text>
+           <Text style={styles.content}>
+        {formatText(truncateText(item.title, 1000))}
+      </Text>
+         
         </View>
       </View>
 
-      <Text style={styles.content}>{truncateText(item.content, 120)}</Text>
+      <Text style={styles.content}>{formatText(truncateText(item.content, 120))}</Text>
 
       <View style={styles.footer}>
         <View style={styles.stat}>
@@ -89,6 +104,17 @@ const MessagesScreen = ({ navigation }) => {
           />
         }
       />
+
+      {/* ✅ Floating Action Button - Only shows for ADMIN */}
+      {isAdmin && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => navigation.navigate("CreateMessage")}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add" size={28} color={COLORS.white} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -153,6 +179,23 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 12,
     color: COLORS.textLight,
+  },
+  // ✅ Floating Action Button Style
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });
 

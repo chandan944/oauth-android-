@@ -144,7 +144,7 @@ const LoginScreen = ({ navigation }) => {
       <View style={styles.content}>
         <View style={styles.logoSection}>
           <Text style={styles.logo}>🌟</Text>
-          <Text style={styles.appName}>SelfHelp</Text>
+          <Text style={styles.appName}>Self Help</Text>
           <Text style={styles.tagline}>Your Personal Growth Companion</Text>
         </View>
 
@@ -179,9 +179,7 @@ const LoginScreen = ({ navigation }) => {
             )}
           </TouchableOpacity>
 
-          <Text style={styles.disclaimer}>
-            By continuing, you agree to our Terms of Service
-          </Text>
+          
         </View>
       </View>
     </LinearGradient>
@@ -236,6 +234,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   googleButton: {
+     marginBottom:40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -255,6 +254,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   googleButtonText: {
+   
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,

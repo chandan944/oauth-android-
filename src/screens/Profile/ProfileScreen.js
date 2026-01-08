@@ -39,60 +39,7 @@ const ProfileScreen = () => {
         </View>
       </View>
 
-      <Card style={styles.section}>
-        <Text style={styles.sectionTitle}>Account Settings</Text>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="person-outline" size={24} color={COLORS.primary} />
-          <Text style={styles.menuText}>Edit Profile</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.grey} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons
-            name="notifications-outline"
-            size={24}
-            color={COLORS.primary}
-          />
-          <Text style={styles.menuText}>Notifications</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.grey} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons
-            name="lock-closed-outline"
-            size={24}
-            color={COLORS.primary}
-          />
-          <Text style={styles.menuText}>Privacy</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.grey} />
-        </TouchableOpacity>
-      </Card>
-
-      <Card style={styles.section}>
-        <Text style={styles.sectionTitle}>Support</Text>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons
-            name="help-circle-outline"
-            size={24}
-            color={COLORS.primary}
-          />
-          <Text style={styles.menuText}>Help Center</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.grey} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons
-            name="information-circle-outline"
-            size={24}
-            color={COLORS.primary}
-          />
-          <Text style={styles.menuText}>About</Text>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.grey} />
-        </TouchableOpacity>
-      </Card>
-
+     
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={24} color={COLORS.error} />
         <Text style={styles.logoutText}>Logout</Text>
@@ -115,6 +62,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     backgroundColor: COLORS.white,
     marginBottom: 16,
+    marginTop:150
   },
   avatar: {
     width: 100,

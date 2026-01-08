@@ -15,6 +15,7 @@ import EmptyState from "../../components/common/EmptyState";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS, MOOD_EMOJIS, MOOD_COLORS } from "../../utils/colors";
 import { formatDate, truncateText } from "../../utils/helpers";
+import { formatText } from "../../utils/formatText";
 
 const MyDiariesScreen = ({ navigation }) => {
   const [diaries, setDiaries] = useState([]);
@@ -27,7 +28,7 @@ const MyDiariesScreen = ({ navigation }) => {
 
   // ✅ Reload when screen comes into focus
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
+    const unsubscribe = navigation.addListener("focus", () => {
       loadDiaries();
     });
     return unsubscribe;
@@ -37,7 +38,7 @@ const MyDiariesScreen = ({ navigation }) => {
     try {
       // ✅ This endpoint returns ONLY the logged-in user's diaries (both public and private)
       const response = await getMyDiaries(0, 10);
-      console.log('📝 My diaries loaded:', response.content?.length || 0);
+      console.log("📝 My diaries loaded:", response.content?.length || 0);
       setDiaries(response.content || []);
     } catch (error) {
       console.error("Error loading my diaries:", error);
@@ -89,13 +90,17 @@ const MyDiariesScreen = ({ navigation }) => {
       </View>
 
       <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.content}>{truncateText(item.goodThings, 150)}</Text>
+      <Text style={styles.content}>
+        {formatText(truncateText(item.goodThings, 1000))}
+      </Text>
 
       {/* ✅ Show bad things if they exist */}
       {item.badThings && (
         <View style={styles.challengesSection}>
           <Text style={styles.challengesLabel}>Challenges:</Text>
-          <Text style={styles.challengesText}>{truncateText(item.badThings, 100)}</Text>
+          <Text style={styles.challengesText}>
+            {formatText(truncateText(item.badThings, 1000))}
+          </Text>
         </View>
       )}
 
@@ -135,7 +140,7 @@ const MyDiariesScreen = ({ navigation }) => {
           <Text style={styles.headerText}>My Personal Diaries</Text>
         </View>
         <Text style={styles.headerSubtext}>
-          {diaries.length} {diaries.length === 1 ? 'entry' : 'entries'}
+          {diaries.length} {diaries.length === 1 ? "entry" : "entries"}
         </Text>
       </View>
 

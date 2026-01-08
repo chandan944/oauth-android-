@@ -1,3 +1,4 @@
+// src/screens/Goals/CreateGoalScreen.js
 import React, { useState } from 'react';
 import {
   View,
@@ -7,7 +8,6 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-  Modal,
 } from 'react-native';
 import { createGoal } from '../../services/goalService';
 import Button from '../../components/common/Button';
@@ -15,29 +15,22 @@ import { COLORS } from '../../utils/colors';
 
 const CreateGoalScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
-  const [targetDate, setTargetDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [daysToComplete, setDaysToComplete] = useState('');
   const [priority, setPriority] = useState('Medium');
   const [motivationReason, setMotivationReason] = useState('');
   const [loading, setLoading] = useState(false);
 
   const priorities = ['Low', 'Medium', 'High'];
 
-  // Generate date options (next 365 days)
-  const generateDateOptions = () => {
-    const options = [];
-    const today = new Date();
-    
-    for (let i = 1; i <= 365; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      options.push(date);
-    }
-    
-    return options;
-  };
-
-  const dateOptions = generateDateOptions();
+  // Quick day presets
+  const quickPresets = [
+    { label: '7 Days', days: 7 },
+    { label: '14 Days', days: 14 },
+    { label: '30 Days', days: 30 },
+    { label: '60 Days', days: 60 },
+    { label: '90 Days', days: 90 },
+    { label: '180 Days', days: 180 },
+  ];
 
   // Format date as YYYY-MM-DD for backend
   const formatDate = (date) => {
@@ -45,6 +38,13 @@ const CreateGoalScreen = ({ navigation }) => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  };
+
+  // Calculate target date from days
+  const calculateTargetDate = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() + parseInt(days));
+    return date;
   };
 
   // Format date for display
@@ -56,30 +56,8 @@ const CreateGoalScreen = ({ navigation }) => {
     });
   };
 
-  // Get relative date string (Tomorrow, In 7 days, etc.)
-  const getRelativeDateString = (date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const targetDateCopy = new Date(date);
-    targetDateCopy.setHours(0, 0, 0, 0);
-    
-    const diffTime = targetDateCopy - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays === 7) return 'In 1 week';
-    if (diffDays === 14) return 'In 2 weeks';
-    if (diffDays === 30) return 'In 1 month';
-    if (diffDays === 90) return 'In 3 months';
-    if (diffDays === 180) return 'In 6 months';
-    if (diffDays === 365) return 'In 1 year';
-    
-    return `In ${diffDays} days`;
-  };
-
-  const handleDateSelect = (date) => {
-    setTargetDate(date);
-    setShowDatePicker(false);
+  const handleQuickPreset = (days) => {
+    setDaysToComplete(days.toString());
   };
 
   const handleCreate = async () => {
@@ -88,22 +66,29 @@ const CreateGoalScreen = ({ navigation }) => {
       return;
     }
 
-    // Validate target date is in future
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (targetDate < today) {
-      Alert.alert('Error', 'Target date must be in the future');
+    if (!daysToComplete || parseInt(daysToComplete) <= 0) {
+      Alert.alert('Error', 'Please enter a valid number of days (greater than 0)');
+      return;
+    }
+
+    const days = parseInt(daysToComplete);
+    if (days > 365) {
+      Alert.alert('Error', 'Maximum 365 days allowed');
       return;
     }
 
     setLoading(true);
     try {
-      const startDateFormatted = formatDate(new Date());
+      const startDate = new Date();
+      const targetDate = calculateTargetDate(days);
+
+      const startDateFormatted = formatDate(startDate);
       const targetDateFormatted = formatDate(targetDate);
 
       console.log('📅 Creating goal with dates:', {
         startDate: startDateFormatted,
-        targetDate: targetDateFormatted
+        targetDate: targetDateFormatted,
+        days: days
       });
 
       await createGoal({
@@ -115,7 +100,7 @@ const CreateGoalScreen = ({ navigation }) => {
         motivationReason: motivationReason.trim() || null,
       });
 
-      Alert.alert('Success', 'Goal created successfully!', [
+      Alert.alert('Success', `Goal created! Target: ${formatDisplayDate(targetDate)}`, [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
@@ -128,22 +113,6 @@ const CreateGoalScreen = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Quick date presets
-  const quickPresets = [
-    { label: 'Tomorrow', days: 1 },
-    { label: '1 Week', days: 7 },
-    { label: '2 Weeks', days: 14 },
-    { label: '1 Month', days: 30 },
-    { label: '3 Months', days: 90 },
-    { label: '6 Months', days: 180 },
-  ];
-
-  const handleQuickPreset = (days) => {
-    const date = new Date();
-    date.setDate(date.getDate() + days);
-    setTargetDate(date);
   };
 
   return (
@@ -161,85 +130,54 @@ const CreateGoalScreen = ({ navigation }) => {
           placeholderTextColor={COLORS.grey}
         />
 
-        <Text style={styles.label}>Target Date *</Text>
+        <Text style={styles.label}>Days to Complete *</Text>
         
         {/* Quick Presets */}
         <View style={styles.presetsContainer}>
           {quickPresets.map((preset) => (
             <TouchableOpacity
               key={preset.days}
-              style={styles.presetButton}
+              style={[
+                styles.presetButton,
+                daysToComplete === preset.days.toString() && styles.presetButtonActive
+              ]}
               onPress={() => handleQuickPreset(preset.days)}
             >
-              <Text style={styles.presetText}>{preset.label}</Text>
+              <Text style={[
+                styles.presetText,
+                daysToComplete === preset.days.toString() && styles.presetTextActive
+              ]}>
+                {preset.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <TouchableOpacity
-          style={styles.datePickerButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Text style={styles.datePickerText}>
-            📅 {formatDisplayDate(targetDate)}
-          </Text>
-          <Text style={styles.relativeDateText}>
-            {getRelativeDateString(targetDate)}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.daysInputContainer}>
+          <TextInput
+            style={styles.daysInput}
+            placeholder="Enter number of days"
+            value={daysToComplete}
+            onChangeText={(text) => {
+              // Only allow numbers
+              const numericValue = text.replace(/[^0-9]/g, '');
+              setDaysToComplete(numericValue);
+            }}
+            keyboardType="numeric"
+            placeholderTextColor={COLORS.grey}
+          />
+          <Text style={styles.daysLabel}>days</Text>
+        </View>
 
-        {/* Custom Date Picker Modal */}
-        <Modal
-          visible={showDatePicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowDatePicker(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Target Date</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={styles.closeButton}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <ScrollView style={styles.dateList}>
-                {dateOptions.filter((_, index) => 
-                  // Show: Tomorrow, then every 7 days for first 90 days, then every 30 days
-                  index === 0 || 
-                  (index < 90 && index % 7 === 0) || 
-                  (index >= 90 && index % 30 === 0)
-                ).map((date, index) => {
-                  const isSelected = formatDate(date) === formatDate(targetDate);
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.dateOption,
-                        isSelected && styles.dateOptionSelected
-                      ]}
-                      onPress={() => handleDateSelect(date)}
-                    >
-                      <Text style={[
-                        styles.dateOptionText,
-                        isSelected && styles.dateOptionTextSelected
-                      ]}>
-                        {formatDisplayDate(date)}
-                      </Text>
-                      <Text style={[
-                        styles.dateOptionSubtext,
-                        isSelected && styles.dateOptionSubtextSelected
-                      ]}>
-                        {getRelativeDateString(date)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
+        {/* Show calculated target date if days entered */}
+        {daysToComplete && parseInt(daysToComplete) > 0 && (
+          <View style={styles.targetDatePreview}>
+            <Text style={styles.targetDateLabel}>Target Date:</Text>
+            <Text style={styles.targetDateValue}>
+              📅 {formatDisplayDate(calculateTargetDate(parseInt(daysToComplete)))}
+            </Text>
           </View>
-        </Modal>
+        )}
 
         <Text style={styles.label}>Priority</Text>
         <View style={styles.priorityContainer}>
@@ -315,47 +253,76 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  presetsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 12,
-    gap: 8,
-  },
-  presetButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary + '15',
-    borderWidth: 1,
-    borderColor: COLORS.primary + '30',
-  },
-  presetText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  datePickerButton: {
-    backgroundColor: COLORS.white,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-  },
-  datePickerText: {
-    fontSize: 16,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-  relativeDateText: {
-    fontSize: 12,
-    color: COLORS.textLight,
-    marginTop: 4,
-  },
   textArea: {
     minHeight: 100,
     textAlignVertical: 'top',
+  },
+  presetsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+    gap: 8,
+  },
+  presetButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+  },
+  presetButtonActive: {
+    backgroundColor: COLORS.primary + '20',
+    borderColor: COLORS.primary,
+  },
+  presetText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  presetTextActive: {
+    color: COLORS.primary,
+  },
+  daysInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  daysInput: {
+    flex: 1,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    padding: 16,
+    textAlign: 'center',
+  },
+  daysLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textLight,
+    paddingRight: 8,
+  },
+  targetDatePreview: {
+    backgroundColor: COLORS.primary + '10',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  targetDateLabel: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginBottom: 4,
+  },
+  targetDateValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.primary,
   },
   priorityContainer: {
     flexDirection: 'row',
@@ -382,67 +349,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   priorityTextActive: {
-    color: COLORS.primary,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  closeButton: {
-    fontSize: 24,
-    color: COLORS.textLight,
-    fontWeight: '300',
-  },
-  dateList: {
-    padding: 16,
-  },
-  dateOption: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  dateOptionSelected: {
-    backgroundColor: COLORS.primary + '20',
-    borderColor: COLORS.primary,
-  },
-  dateOptionText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  dateOptionTextSelected: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  dateOptionSubtext: {
-    fontSize: 12,
-    color: COLORS.textLight,
-    marginTop: 4,
-  },
-  dateOptionSubtextSelected: {
     color: COLORS.primary,
   },
 });

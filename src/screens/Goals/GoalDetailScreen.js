@@ -1,3 +1,4 @@
+// src/screens/Goals/GoalDetailScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -29,7 +30,6 @@ const GoalDetailScreen = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [todayProgress, setTodayProgress] = useState("");
-  const [totalProgress, setTotalProgress] = useState("");
   const [logging, setLogging] = useState(false);
 
   useEffect(() => {
@@ -58,20 +58,69 @@ const GoalDetailScreen = ({ route }) => {
     loadGoalData();
   };
 
+  // Get current total progress (from latest entry or 0)
+  const getCurrentTotalProgress = () => {
+    if (progressHistory && progressHistory.length > 0) {
+      return progressHistory[0]?.totalProgress || 0;
+    }
+    return 0;
+  };
+
+  // Calculate new total progress
+  const calculateNewTotalProgress = () => {
+    const currentTotal = getCurrentTotalProgress();
+    const todayAdd = parseInt(todayProgress) || 0;
+    const newTotal = currentTotal + todayAdd;
+    
+    // Cap at 100%
+    return Math.min(newTotal, 100);
+  };
+
   const handleLogProgress = async () => {
-    if (!totalProgress) {
-      Alert.alert("Error", "Please enter total progress percentage");
+    if (!todayProgress || parseInt(todayProgress) <= 0) {
+      Alert.alert("Error", "Please enter today's progress (must be greater than 0)");
       return;
     }
 
+    const todayProgressNum = parseInt(todayProgress);
+    
+    if (todayProgressNum > 100) {
+      Alert.alert("Error", "Today's progress cannot exceed 100%");
+      return;
+    }
+
+    const currentTotal = getCurrentTotalProgress();
+    const newTotal = calculateNewTotalProgress();
+
+    if (newTotal > 100) {
+      Alert.alert(
+        "Warning",
+        `Adding ${todayProgressNum}% would exceed 100% (current: ${currentTotal}%). The total will be capped at 100%.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Continue", onPress: () => submitProgress(todayProgressNum, 100) }
+        ]
+      );
+      return;
+    }
+
+    submitProgress(todayProgressNum, newTotal);
+  };
+
+  const submitProgress = async (todayProgressNum, totalProgressNum) => {
     setLogging(true);
     try {
       await logProgress({
         goalId,
-        todayProgress: parseInt(todayProgress) || 0,
-        totalProgress: parseInt(totalProgress),
+        todayProgress: todayProgressNum,
+        totalProgress: totalProgressNum,
       });
-      Alert.alert("Success", "Progress logged!");
+      
+      Alert.alert(
+        "Success! 🎉",
+        `Progress logged!\nToday: +${todayProgressNum}%\nTotal: ${totalProgressNum}%`
+      );
+      
       setTodayProgress("");
       loadGoalData();
     } catch (error) {
@@ -86,7 +135,8 @@ const GoalDetailScreen = ({ route }) => {
   if (!goal) return null;
 
   const days = daysLeft(goal.targetDate);
-  const latestProgress = progressHistory[0]?.totalProgress || 0;
+  const latestProgress = getCurrentTotalProgress();
+  const previewNewTotal = todayProgress ? calculateNewTotalProgress() : latestProgress;
 
   return (
     <ScrollView
@@ -143,25 +193,46 @@ const GoalDetailScreen = ({ route }) => {
 
       <Card>
         <Text style={styles.sectionTitle}>Log Today's Progress</Text>
-        <Text style={styles.label}>Today's Progress (%)</Text>
+        
+        {/* Current Progress Display */}
+        <View style={styles.currentProgressBox}>
+          <Text style={styles.currentProgressLabel}>Current Total Progress</Text>
+          <Text style={styles.currentProgressValue}>{latestProgress}%</Text>
+        </View>
+
+        <Text style={styles.label}>Add Today's Progress (%) *</Text>
         <TextInput
           style={styles.input}
-          placeholder="5"
+          placeholder="e.g., 5"
           value={todayProgress}
-          onChangeText={setTodayProgress}
+          onChangeText={(text) => {
+            // Only allow numbers
+            const numericValue = text.replace(/[^0-9]/g, '');
+            setTodayProgress(numericValue);
+          }}
           keyboardType="numeric"
           placeholderTextColor={COLORS.grey}
         />
 
-        <Text style={styles.label}>Total Progress (%) *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="25"
-          value={totalProgress}
-          onChangeText={setTotalProgress}
-          keyboardType="numeric"
-          placeholderTextColor={COLORS.grey}
-        />
+        {/* Preview of new total */}
+        {todayProgress && parseInt(todayProgress) > 0 && (
+          <View style={styles.previewBox}>
+            <View style={styles.calculationRow}>
+              <Text style={styles.calculationText}>
+                {latestProgress}% (current)
+              </Text>
+              <Text style={styles.calculationPlus}>+</Text>
+              <Text style={styles.calculationText}>
+                {todayProgress}% (today)
+              </Text>
+              <Text style={styles.calculationEquals}>=</Text>
+              <Text style={styles.calculationResult}>
+                {previewNewTotal}%
+              </Text>
+            </View>
+            <Text style={styles.previewLabel}>New Total Progress</Text>
+          </View>
+        )}
 
         <Button
           title="Log Progress"
@@ -171,25 +242,34 @@ const GoalDetailScreen = ({ route }) => {
       </Card>
 
       <Card>
-        <Text style={styles.sectionTitle}>Recent Progress</Text>
-        {progressHistory.slice(0, 5).map((entry) => (
-          <View key={entry.id} style={styles.progressItem}>
-            <View style={styles.progressDate}>
-              <Text style={styles.progressDateText}>
-                {formatDate(entry.date)}
-              </Text>
+        <Text style={styles.sectionTitle}>Recent Progress History</Text>
+        {progressHistory && progressHistory.length > 0 ? (
+          progressHistory.slice(0, 5).map((entry) => (
+            <View key={entry.id} style={styles.progressItem}>
+              <View style={styles.progressItemHeader}>
+                <Text style={styles.progressDateText}>
+                  {formatDate(entry.date)}
+                </Text>
+                <View style={styles.progressBadge}>
+                  <Text style={styles.progressBadgeText}>
+                    +{entry.todayProgress}%
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${entry.totalProgress}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressPercent}>{entry.totalProgress}%</Text>
             </View>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${entry.totalProgress}%` },
-                ]}
-              />
-            </View>
-            <Text style={styles.progressPercent}>{entry.totalProgress}%</Text>
-          </View>
-        ))}
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No progress logged yet</Text>
+        )}
       </Card>
     </ScrollView>
   );
@@ -201,7 +281,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    margin: 16,
     alignItems: "center",
   },
   iconContainer: {
@@ -217,29 +296,28 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: COLORS.text,
-    marginBottom: 8,
     textAlign: "center",
+    marginBottom: 8,
   },
   date: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.textLight,
     marginBottom: 24,
   },
   progressCircle: {
     position: "relative",
+    alignItems: "center",
     marginVertical: 16,
   },
   progressText: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
+    top: "50%",
+    left: "39%",
+    transform: [{ translateX: -50 }, { translateY: -30 }],
     alignItems: "center",
   },
   progressValue: {
-    fontSize: 48,
+    fontSize: 32,
     fontWeight: "bold",
     color: COLORS.primary,
   },
@@ -249,22 +327,23 @@ const styles = StyleSheet.create({
   },
   statRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    marginTop: 16,
+    gap: 16,
   },
   statBox: {
+    flex: 1,
     alignItems: "center",
+    padding: 16,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
   },
   statValue: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "bold",
     color: COLORS.primary,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.textLight,
     marginTop: 4,
   },
@@ -272,13 +351,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: COLORS.text,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   motivation: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.textLight,
-    lineHeight: 24,
-    fontStyle: "italic",
+    lineHeight: 20,
+  },
+  currentProgressBox: {
+    backgroundColor: COLORS.primary + "10",
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  currentProgressLabel: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginBottom: 4,
+  },
+  currentProgressValue: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: COLORS.primary,
   },
   label: {
     fontSize: 14,
@@ -287,7 +382,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
     padding: 16,
     borderRadius: 12,
     fontSize: 16,
@@ -295,25 +390,78 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  progressItem: {
+  previewBox: {
+    backgroundColor: COLORS.success + "15",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignItems: "center",
+  },
+  calculationRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  progressDate: {
-    width: 80,
+  calculationText: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: "600",
   },
-  progressDateText: {
+  calculationPlus: {
+    fontSize: 18,
+    color: COLORS.success,
+    fontWeight: "bold",
+    marginHorizontal: 8,
+  },
+  calculationEquals: {
+    fontSize: 18,
+    color: COLORS.text,
+    fontWeight: "bold",
+    marginHorizontal: 8,
+  },
+  calculationResult: {
+    fontSize: 18,
+    color: COLORS.success,
+    fontWeight: "bold",
+  },
+  previewLabel: {
     fontSize: 12,
     color: COLORS.textLight,
   },
+  progressItem: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  progressItemHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  progressDateText: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: "600",
+  },
+  progressBadge: {
+    backgroundColor: COLORS.success + "20",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  progressBadgeText: {
+    fontSize: 12,
+    color: COLORS.success,
+    fontWeight: "bold",
+  },
   progressBar: {
-    flex: 1,
     height: 8,
     backgroundColor: COLORS.border,
     borderRadius: 4,
     overflow: "hidden",
-    marginHorizontal: 12,
+    marginBottom: 8,
   },
   progressFill: {
     height: "100%",
@@ -321,10 +469,15 @@ const styles = StyleSheet.create({
   },
   progressPercent: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: COLORS.primary,
-    width: 40,
     textAlign: "right",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: COLORS.textLight,
+    fontSize: 14,
+    paddingVertical: 16,
   },
 });
 
