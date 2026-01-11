@@ -27,6 +27,11 @@ import GoalsScreen from "../screens/Goals/GoalsScreen";
 import CreateGoalScreen from "../screens/Goals/CreateGoalScreen";
 import GoalDetailScreen from "../screens/Goals/GoalDetailScreen";
 import ProfileScreen from "../screens/Profile/ProfileScreen";
+import TodosScreen from "../screens/Todos/TodosScreen";
+import CreateTodoScreen from "../screens/Todos/CreateTodoScreen";
+import EditTodoScreen from "../screens/Todos/EditTodoScreen";
+import TodoDetailScreen from "../screens/Todos/TodoDetailScreen";
+import TodoAnalyticsScreen from "../screens/Todos/TodoAnalyticsScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -38,6 +43,41 @@ const AuthStack = () => (
   </Stack.Navigator>
 );
 
+const TodosStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerStyle: { backgroundColor: COLORS.primary },
+      headerTintColor: COLORS.white,
+      headerTitleStyle: { fontWeight: "bold" },
+    }}
+  >
+    <Stack.Screen
+      name="TodosList"
+      component={TodosScreen}
+      options={{ title: "✅ My Todos" }}
+    />
+    <Stack.Screen
+      name="CreateTodo"
+      component={CreateTodoScreen}
+      options={{ title: "➕ Create Todo" }}
+    />
+    <Stack.Screen
+      name="EditTodo"
+      component={EditTodoScreen}
+      options={{ title: "✏️ Edit Todo" }}
+    />
+    <Stack.Screen
+      name="TodoDetail"
+      component={TodoDetailScreen}
+      options={{ title: "📝 Todo Details" }}
+    />
+    <Stack.Screen
+      name="TodoAnalytics"
+      component={TodoAnalyticsScreen}
+      options={{ title: "📊 Todo Analytics" }}
+    />
+  </Stack.Navigator>
+);
 // Diary Stack
 const DiaryStack = () => (
   <Stack.Navigator
@@ -191,6 +231,9 @@ const MainTabs = () => (
           case "Messages":
             iconName = focused ? "chatbubbles" : "chatbubbles-outline";
             break;
+          case "Todos":  // ✅ NEW
+            iconName = focused ? "checkbox" : "checkbox-outline";
+            break;
           case "Habits":
             iconName = focused
               ? "checkmark-circle"
@@ -228,6 +271,7 @@ const MainTabs = () => (
     <Tab.Screen name="Diary" component={DiaryStack} />
     <Tab.Screen name="Analytics" component={AnalyticsStack} />
     <Tab.Screen name="Messages" component={MessagesStack} />
+    <Tab.Screen name="Todos" component={TodosStack} />  {/* ✅ NEW */}
     <Tab.Screen name="Habits" component={HabitsStack} />
     <Tab.Screen name="Goals" component={GoalsStack} />
     <Tab.Screen name="Profile" component={ProfileScreen} />
