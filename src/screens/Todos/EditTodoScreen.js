@@ -260,13 +260,13 @@ const EditTodoScreen = ({ route, navigation }) => {
               title="Cancel"
               onPress={() => navigation.goBack()}
               variant="secondary"
-              style={styles.button}
+               style={[styles.button, { backgroundColor: "red" }]}
             />
             <Button
-              title="Update Todo"
+              title="Update"
               onPress={handleUpdate}
               loading={saving}
-              style={styles.button}
+             style={[styles.button, { backgroundColor: "green" }]}
             />
           </View>
         </Card>

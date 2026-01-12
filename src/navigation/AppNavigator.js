@@ -67,27 +67,37 @@ const TodosStack = () => (
     <Stack.Screen
       name="TodosList"
       component={TodosScreen}
-      options={{ title: "✅ My Todos" }}
+      options={{ 
+        title: "My Todos",
+        headerLeft: () => (
+          <Ionicons 
+            name="checkbox" 
+            size={24} 
+            color={COLORS.white} 
+            style={{ marginLeft: 15 }} 
+          />
+        )
+      }}
     />
     <Stack.Screen
       name="CreateTodo"
       component={CreateTodoScreen}
-      options={{ title: "➕ Create Todo" }}
+      options={{ title: "Create Todo" }}
     />
     <Stack.Screen
       name="EditTodo"
       component={EditTodoScreen}
-      options={{ title: "✏️ Edit Todo" }}
+      options={{ title: "Edit Todo" }}
     />
     <Stack.Screen
       name="TodoDetail"
       component={TodoDetailScreen}
-      options={{ title: "📝 Todo Details" }}
+      options={{ title: "Todo Details" }}
     />
     <Stack.Screen
       name="TodoAnalytics"
       component={TodoAnalyticsScreen}
-      options={{ title: "📊 Todo Analytics" }}
+      options={{ title: "Todo Analytics" }}
     />
   </Stack.Navigator>
 );
@@ -103,17 +113,27 @@ const DiaryStack = () => (
     <Stack.Screen
       name="DiaryFeed"
       component={DiaryFeedScreen}
-      options={{ title: "📖 Public Feed" }}
+      options={{ 
+        title: "Public Feed",
+        headerLeft: () => (
+          <Ionicons 
+            name="home" 
+            size={24} 
+            color={COLORS.white} 
+            style={{ marginLeft: 15 }} 
+          />
+        )
+      }}
     />
     <Stack.Screen
       name="MyDiaries"
       component={MyDiariesScreen}
-      options={{ title: "📝 My Diaries" }}
+      options={{ title: "My Diaries" }}
     />
     <Stack.Screen
       name="CreateDiary"
       component={CreateDiaryScreen}
-      options={{ title: "✍️ Create Diary" }}
+      options={{ title: "Create Diary" }}
     />
   </Stack.Navigator>
 );
@@ -129,12 +149,22 @@ const AnalyticsStack = () => (
     <Stack.Screen
       name="MoodAnalytics"
       component={MoodAnalyticsScreen}
-      options={{ title: "📊 Mood Analytics" }}
+      options={{ 
+        title: "Mood Analytics",
+        headerLeft: () => (
+          <Ionicons 
+            name="pie-chart" 
+            size={24} 
+            color={COLORS.white} 
+            style={{ marginLeft: 15 }} 
+          />
+        )
+      }}
     />
     <Stack.Screen
       name="ProgressDashboard"
       component={ProgressDashboardScreen}
-      options={{ title: "📈 Progress" }}
+      options={{ title: "Progress Dashboard" }}
     />
   </Stack.Navigator>
 );
@@ -150,22 +180,32 @@ const MessagesStack = () => (
     <Stack.Screen
       name="MessagesList"
       component={MessagesScreen}
-      options={{ title: "📢 Messages" }}
+      options={{ 
+        title: "Messages",
+        headerLeft: () => (
+          <Ionicons 
+            name="chatbox" 
+            size={24} 
+            color={COLORS.white} 
+            style={{ marginLeft: 15 }} 
+          />
+        )
+      }}
     />
     <Stack.Screen
       name="MessageDetail"
       component={MessageDetailScreen}
-      options={{ title: "💬 Message" }}
+      options={{ title: "Message Details" }}
     />
     <Stack.Screen
       name="CreateMessage"
       component={CreateMessageScreen}
-      options={{ title: "✍️ Create Message" }}
+      options={{ title: "Create Message" }}
     />
     <Stack.Screen
       name="EditMessage"
       component={EditMessageScreen}
-      options={{ title: "✏️ Edit Message" }}
+      options={{ title: "Edit Message" }}
     />
   </Stack.Navigator>
 );
@@ -181,22 +221,32 @@ const HabitsStack = () => (
     <Stack.Screen
       name="HabitsList"
       component={HabitsScreen}
-      options={{ title: "🔁 Habits" }}
+      options={{ 
+        title: "Habits",
+        headerLeft: () => (
+          <Ionicons 
+            name="checkmark-circle" 
+            size={24} 
+            color={COLORS.white} 
+            style={{ marginLeft: 15 }} 
+          />
+        )
+      }}
     />
     <Stack.Screen
       name="CreateHabit"
       component={CreateHabitScreen}
-      options={{ title: "➕ Create Habit" }}
+      options={{ title: "Create Habit" }}
     />
     <Stack.Screen
       name="HabitDetail"
       component={HabitDetailScreen}
-      options={{ title: "📊 Habit Details" }}
+      options={{ title: "Habit Details" }}
     />
     <Stack.Screen
       name="EditHabit"
       component={EditHabitScreen}
-      options={{ title: "✏️ Edit Habit" }}
+      options={{ title: "Edit Habit" }}
     />
   </Stack.Navigator>
 );
@@ -212,22 +262,32 @@ const GoalsStack = () => (
     <Stack.Screen
       name="GoalsList"
       component={GoalsScreen}
-      options={{ title: "🎯 Goals" }}
+      options={{ 
+        title: "Goals",
+        headerLeft: () => (
+          <Ionicons 
+            name="flag" 
+            size={24} 
+            color={COLORS.white} 
+            style={{ marginLeft: 15 }} 
+          />
+        )
+      }}
     />
     <Stack.Screen
       name="CreateGoal"
       component={CreateGoalScreen}
-      options={{ title: "➕ Create Goal" }}
+      options={{ title: "Create Goal" }}
     />
     <Stack.Screen
       name="GoalDetail"
       component={GoalDetailScreen}
-      options={{ title: "📊 Goal Details" }}
+      options={{ title: "Goal Details" }}
     />
     <Stack.Screen
       name="EditGoal"
       component={EditGoalScreen}
-      options={{ title: "✏️ Edit Goal" }}
+      options={{ title: "Edit Goal" }}
     />
   </Stack.Navigator>
 );

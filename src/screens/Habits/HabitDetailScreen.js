@@ -50,7 +50,7 @@ const HabitDetailScreen = ({ route, navigation }) => {
               onPress={handleDeleteHabit}
               style={styles.headerButton}
             >
-              <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
+              <Ionicons name="trash-outline" size={24} color={COLORS.error} />
             </TouchableOpacity>
           </View>
         ),
@@ -156,7 +156,7 @@ const HabitDetailScreen = ({ route, navigation }) => {
     >
       <Card style={styles.header}>
         <View style={styles.iconContainer}>
-          <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
+          <Ionicons name="balloon-sharp" size={48} color={COLORS.success} />
         </View>
         <Text style={styles.title}>{habit.title}</Text>
         <Text style={styles.target}>Target: {habit.targetValue}</Text>

@@ -21,7 +21,6 @@ const GoalsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
     loadGoals();
@@ -81,7 +80,7 @@ const GoalsScreen = ({ navigation }) => {
       >
         <View style={styles.goalHeader}>
           <View style={styles.iconContainer}>
-            <Ionicons name="flag" size={32} color={COLORS.primary} />
+            <Ionicons name="golf" size={32} color={COLORS.black} />
           </View>
           <View style={styles.goalInfo}>
             <Text style={styles.goalTitle}>{item.title}</Text>
@@ -97,13 +96,13 @@ const GoalsScreen = ({ navigation }) => {
                 onPress={() => handleEditGoal(item.id)}
                 style={styles.actionButton}
               >
-                <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+                <Ionicons name="eyedrop" size={20} color={COLORS.success} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleDeleteGoal(item.id, item.title)}
                 style={styles.actionButton}
               >
-                <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
+                <Ionicons name="trash-outline" size={20} color={COLORS.error} />
               </TouchableOpacity>
             </View>
          

@@ -58,7 +58,7 @@ const CreateTodoScreen = ({ navigation }) => {
         description: description.trim() || null,
         priority,
         category,
-        dueDate: dueDate ? dueDate.toISOString().split('T')[0] : null,
+        dueDate: dueDate ? dueDate.toISOString().split("T")[0] : null,
         estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
         tags: tags.trim() || null,
       };
@@ -139,7 +139,10 @@ const CreateTodoScreen = ({ navigation }) => {
                 <Text
                   style={[
                     styles.optionText,
-                    priority === p.value && { color: p.color, fontWeight: "700" },
+                    priority === p.value && {
+                      color: p.color,
+                      fontWeight: "700",
+                    },
                   ]}
                 >
                   {p.label}
@@ -183,7 +186,11 @@ const CreateTodoScreen = ({ navigation }) => {
             style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}
           >
-            <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+            <Ionicons
+              name="calendar-outline"
+              size={20}
+              color={COLORS.primary}
+            />
             <Text style={styles.dateButtonText}>
               {dueDate ? dueDate.toLocaleDateString() : "Set due date"}
             </Text>
@@ -215,22 +222,21 @@ const CreateTodoScreen = ({ navigation }) => {
           />
 
           {/* Tags */}
-         
 
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
             <Button
-  title="Cancel"
-  onPress={() => navigation.goBack()}
-  variant="secondary"
-  style={[styles.button, { backgroundColor: "red" }]}
- />
+              title="Cancel"
+              onPress={() => navigation.goBack()}
+              variant="secondary"
+              style={[styles.button, { backgroundColor: "orange" }]}
+            />
 
             <Button
               title="Create Todo"
               onPress={handleCreate}
               loading={loading}
-              style={styles.button}
+              style={[styles.button, { backgroundColor: "green" }]}
             />
           </View>
         </Card>

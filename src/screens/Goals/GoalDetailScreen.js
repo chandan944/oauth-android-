@@ -200,7 +200,7 @@ const GoalDetailScreen = ({ route, navigation }) => {
     >
       <Card style={styles.header}>
         <View style={styles.iconContainer}>
-          <Ionicons name="flag" size={48} color={COLORS.primary} />
+          <Ionicons name="heart-circle-sharp" size={48} color={COLORS.success} />
         </View>
         <Text style={styles.title}>{goal.title}</Text>
         <Text style={styles.date}>Target: {formatDate(goal.targetDate)}</Text>

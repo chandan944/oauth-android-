@@ -76,7 +76,7 @@ const HabitsScreen = ({ navigation }) => {
     >
       <View style={styles.habitHeader}>
         <View style={styles.iconContainer}>
-          <Ionicons name="checkmark-circle" size={32} color={COLORS.success} />
+          <Ionicons name="cloud-done-sharp" size={32} color={COLORS.black} />
         </View>
         <View style={styles.habitInfo}>
           <Text style={styles.habitTitle}>{item.title}</Text>
@@ -90,13 +90,13 @@ const HabitsScreen = ({ navigation }) => {
               onPress={() => handleEditHabit(item.id)}
               style={styles.actionButton}
             >
-              <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+              <Ionicons name="eyedrop" size={20} color={COLORS.success} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleDeleteHabit(item.id, item.title)}
               style={styles.actionButton}
             >
-              <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
+              <Ionicons name="trash-outline" size={20} color={COLORS.error} />
             </TouchableOpacity>
           </View>
       

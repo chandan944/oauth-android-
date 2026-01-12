@@ -99,13 +99,13 @@ const MessagesScreen = ({ navigation }) => {
               onPress={() => handleEditMessage(item.id)}
               style={styles.actionButton}
             >
-              <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+              <Ionicons name="eyedrop" size={20} color={COLORS.success} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleDeleteMessage(item.id, item.title)}
               style={styles.actionButton}
             >
-              <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
+              <Ionicons name="trash-outline" size={20} color={COLORS.error} />
             </TouchableOpacity>
           </View>
         )}
