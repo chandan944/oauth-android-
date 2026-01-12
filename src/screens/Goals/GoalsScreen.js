@@ -6,9 +6,10 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { getMyGoals } from "../../services/goalService";
+import { getMyGoals, deleteGoal } from "../../services/goalService";
 import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -19,6 +20,8 @@ const GoalsScreen = ({ navigation }) => {
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
     loadGoals();
@@ -41,6 +44,34 @@ const GoalsScreen = ({ navigation }) => {
     loadGoals();
   };
 
+  const handleDeleteGoal = (goalId, goalTitle) => {
+    Alert.alert(
+      "Delete Goal",
+      `Are you sure you want to delete "${goalTitle}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteGoal(goalId);
+              Alert.alert("Success", "Goal deleted successfully");
+              loadGoals();
+            } catch (error) {
+              console.error("Error deleting goal:", error);
+              Alert.alert("Error", "Failed to delete goal");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleEditGoal = (goalId) => {
+    navigation.navigate("EditGoal", { goalId });
+  };
+
   const renderGoal = ({ item }) => {
     const days = daysLeft(item.targetDate);
 
@@ -58,6 +89,24 @@ const GoalsScreen = ({ navigation }) => {
               Target: {formatDate(item.targetDate)}
             </Text>
           </View>
+
+          {/* Admin Action Buttons */}
+          
+            <View style={styles.adminActions}>
+              <TouchableOpacity
+                onPress={() => handleEditGoal(item.id)}
+                style={styles.actionButton}
+              >
+                <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleDeleteGoal(item.id, item.title)}
+                style={styles.actionButton}
+              >
+                <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
+              </TouchableOpacity>
+            </View>
+         
         </View>
 
         <View style={styles.footer}>
@@ -170,6 +219,13 @@ const styles = StyleSheet.create({
   goalDate: {
     fontSize: 14,
     color: COLORS.textLight,
+  },
+  adminActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionButton: {
+    padding: 8,
   },
   footer: {
     flexDirection: "row",

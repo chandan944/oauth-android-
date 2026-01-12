@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -255,7 +256,7 @@ const LoginScreen = ({ navigation }) => {
   />
             </LinearGradient>
           </View>
-          <Text style={styles.appName}>Self Help</Text>
+          
           <View style={styles.taglineContainer}>
             <Text style={styles.tagline}>Your Personal Growth Companion</Text>
           </View>
@@ -297,7 +298,7 @@ const LoginScreen = ({ navigation }) => {
                     <Ionicons name="logo-google" size={24} color="#DB4437" />
                   </View>
                   <Text style={styles.googleButtonText}>Continue with Google</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#666" />
+                 
                 </>
               )}
             </LinearGradient>
@@ -337,8 +338,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logoImage: {
-  width: 60,
-  height: 60,
+  width: 130,
+  height: 130,
+  borderRadius:90,
   resizeMode: "contain",
 },
 

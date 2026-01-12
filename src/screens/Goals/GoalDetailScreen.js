@@ -1,4 +1,3 @@
-// src/screens/Goals/GoalDetailScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -8,6 +7,7 @@ import {
   Alert,
   TextInput,
   RefreshControl,
+  TouchableOpacity,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { ProgressChart } from "react-native-chart-kit";
@@ -15,15 +15,15 @@ import {
   getGoal,
   logProgress,
   getProgressHistory,
+  deleteGoal,
 } from "../../services/goalService";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
-import { formatDate, daysLeft, calculateProgress } from "../../utils/helpers";
-import { Dimensions } from "react-native";
+import { formatDate, daysLeft } from "../../utils/helpers";
 
-const GoalDetailScreen = ({ route }) => {
+const GoalDetailScreen = ({ route, navigation }) => {
   const { goalId } = route.params;
   const [goal, setGoal] = useState(null);
   const [progressHistory, setProgressHistory] = useState([]);
@@ -32,9 +32,33 @@ const GoalDetailScreen = ({ route }) => {
   const [todayProgress, setTodayProgress] = useState("");
   const [logging, setLogging] = useState(false);
 
+ 
   useEffect(() => {
     loadGoalData();
   }, []);
+
+  useEffect(() => {
+   
+      navigation.setOptions({
+        headerRight: () => (
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              onPress={handleEditGoal}
+              style={styles.headerButton}
+            >
+              <Ionicons name="create-outline" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDeleteGoal}
+              style={styles.headerButton}
+            >
+              <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
+            </TouchableOpacity>
+          </View>
+        ),
+      });
+    
+  }, [navigation]);
 
   const loadGoalData = async () => {
     try {
@@ -58,7 +82,6 @@ const GoalDetailScreen = ({ route }) => {
     loadGoalData();
   };
 
-  // Get current total progress (from latest entry or 0)
   const getCurrentTotalProgress = () => {
     if (progressHistory && progressHistory.length > 0) {
       return progressHistory[0]?.totalProgress || 0;
@@ -66,13 +89,10 @@ const GoalDetailScreen = ({ route }) => {
     return 0;
   };
 
-  // Calculate new total progress
   const calculateNewTotalProgress = () => {
     const currentTotal = getCurrentTotalProgress();
     const todayAdd = parseInt(todayProgress) || 0;
     const newTotal = currentTotal + todayAdd;
-    
-    // Cap at 100%
     return Math.min(newTotal, 100);
   };
 
@@ -83,7 +103,7 @@ const GoalDetailScreen = ({ route }) => {
     }
 
     const todayProgressNum = parseInt(todayProgress);
-    
+
     if (todayProgressNum > 100) {
       Alert.alert("Error", "Today's progress cannot exceed 100%");
       return;
@@ -98,7 +118,10 @@ const GoalDetailScreen = ({ route }) => {
         `Adding ${todayProgressNum}% would exceed 100% (current: ${currentTotal}%). The total will be capped at 100%.`,
         [
           { text: "Cancel", style: "cancel" },
-          { text: "Continue", onPress: () => submitProgress(todayProgressNum, 100) }
+          {
+            text: "Continue",
+            onPress: () => submitProgress(todayProgressNum, 100),
+          },
         ]
       );
       return;
@@ -115,12 +138,12 @@ const GoalDetailScreen = ({ route }) => {
         todayProgress: todayProgressNum,
         totalProgress: totalProgressNum,
       });
-      
+
       Alert.alert(
         "Success! 🎉",
         `Progress logged!\nToday: +${todayProgressNum}%\nTotal: ${totalProgressNum}%`
       );
-      
+
       setTodayProgress("");
       loadGoalData();
     } catch (error) {
@@ -131,12 +154,42 @@ const GoalDetailScreen = ({ route }) => {
     }
   };
 
+  const handleEditGoal = () => {
+    navigation.navigate("EditGoal", { goalId });
+  };
+
+  const handleDeleteGoal = () => {
+    Alert.alert(
+      "Delete Goal",
+      "Are you sure you want to delete this goal? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteGoal(goalId);
+              Alert.alert("Success", "Goal deleted successfully");
+              navigation.goBack();
+            } catch (error) {
+              console.error("Error deleting goal:", error);
+              Alert.alert("Error", "Failed to delete goal");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) return <LoadingSpinner />;
   if (!goal) return null;
 
   const days = daysLeft(goal.targetDate);
   const latestProgress = getCurrentTotalProgress();
-  const previewNewTotal = todayProgress ? calculateNewTotalProgress() : latestProgress;
+  const previewNewTotal = todayProgress
+    ? calculateNewTotalProgress()
+    : latestProgress;
 
   return (
     <ScrollView
@@ -193,8 +246,7 @@ const GoalDetailScreen = ({ route }) => {
 
       <Card>
         <Text style={styles.sectionTitle}>Log Today's Progress</Text>
-        
-        {/* Current Progress Display */}
+
         <View style={styles.currentProgressBox}>
           <Text style={styles.currentProgressLabel}>Current Total Progress</Text>
           <Text style={styles.currentProgressValue}>{latestProgress}%</Text>
@@ -206,15 +258,13 @@ const GoalDetailScreen = ({ route }) => {
           placeholder="e.g., 5"
           value={todayProgress}
           onChangeText={(text) => {
-            // Only allow numbers
-            const numericValue = text.replace(/[^0-9]/g, '');
+            const numericValue = text.replace(/[^0-9]/g, "");
             setTodayProgress(numericValue);
           }}
           keyboardType="numeric"
           placeholderTextColor={COLORS.grey}
         />
 
-        {/* Preview of new total */}
         {todayProgress && parseInt(todayProgress) > 0 && (
           <View style={styles.previewBox}>
             <View style={styles.calculationRow}>
@@ -226,9 +276,7 @@ const GoalDetailScreen = ({ route }) => {
                 {todayProgress}% (today)
               </Text>
               <Text style={styles.calculationEquals}>=</Text>
-              <Text style={styles.calculationResult}>
-                {previewNewTotal}%
-              </Text>
+              <Text style={styles.calculationResult}>{previewNewTotal}%</Text>
             </View>
             <Text style={styles.previewLabel}>New Total Progress</Text>
           </View>
@@ -264,7 +312,9 @@ const GoalDetailScreen = ({ route }) => {
                   ]}
                 />
               </View>
-              <Text style={styles.progressPercent}>{entry.totalProgress}%</Text>
+              <Text style={styles.progressPercent}>
+                {entry.totalProgress}%
+              </Text>
             </View>
           ))
         ) : (
@@ -279,6 +329,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    marginRight: 8,
+  },
+  headerButton: {
+    padding: 8,
+    marginLeft: 8,
   },
   header: {
     alignItems: "center",

@@ -93,7 +93,7 @@ const CreateTodoScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Card style={styles.card}>
           {/* Title */}
-          <Text style={styles.label}>Title *</Text>
+          <Text style={styles.label}>Title </Text>
           <TextInput
             style={styles.input}
             placeholder="What needs to be done?"
@@ -215,23 +215,17 @@ const CreateTodoScreen = ({ navigation }) => {
           />
 
           {/* Tags */}
-          <Text style={styles.label}>Tags (Optional)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., urgent, important"
-            value={tags}
-            onChangeText={setTags}
-            placeholderTextColor={COLORS.grey}
-          />
+         
 
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
             <Button
-              title="Cancel"
-              onPress={() => navigation.goBack()}
-              variant="secondary"
-              style={styles.button}
-            />
+  title="Cancel"
+  onPress={() => navigation.goBack()}
+  variant="secondary"
+  style={[styles.button, { backgroundColor: "red" }]}
+ />
+
             <Button
               title="Create Todo"
               onPress={handleCreate}

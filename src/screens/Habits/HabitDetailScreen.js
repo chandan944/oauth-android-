@@ -10,15 +10,20 @@ import {
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { LineChart } from "react-native-chart-kit";
-import { getHabit, logHabit, getHabitLogs } from "../../services/habitService";
+import { useAuth } from "../../context/AuthContext";
+import {
+  getHabit,
+  logHabit,
+  getHabitLogs,
+  deleteHabit,
+} from "../../services/habitService";
 import Card from "../../components/common/Card";
-import Button from "../../components/common/Button";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
 import { formatDate } from "../../utils/helpers";
 import { Dimensions } from "react-native";
 
-const HabitDetailScreen = ({ route }) => {
+const HabitDetailScreen = ({ route, navigation }) => {
   const { habitId } = route.params;
   const [habit, setHabit] = useState(null);
   const [logs, setLogs] = useState([]);
@@ -29,6 +34,29 @@ const HabitDetailScreen = ({ route }) => {
   useEffect(() => {
     loadHabitData();
   }, []);
+
+  useEffect(() => {
+    
+      navigation.setOptions({
+        headerRight: () => (
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              onPress={handleEditHabit}
+              style={styles.headerButton}
+            >
+              <Ionicons name="create-outline" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDeleteHabit}
+              style={styles.headerButton}
+            >
+              <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
+            </TouchableOpacity>
+          </View>
+        ),
+      });
+    
+  }, [navigation]);
 
   const loadHabitData = async () => {
     try {
@@ -70,6 +98,34 @@ const HabitDetailScreen = ({ route }) => {
     } finally {
       setLogging(false);
     }
+  };
+
+  const handleEditHabit = () => {
+    navigation.navigate("EditHabit", { habitId });
+  };
+
+  const handleDeleteHabit = () => {
+    Alert.alert(
+      "Delete Habit",
+      "Are you sure you want to delete this habit? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteHabit(habitId);
+              Alert.alert("Success", "Habit deleted successfully");
+              navigation.goBack();
+            } catch (error) {
+              console.error("Error deleting habit:", error);
+              Alert.alert("Error", "Failed to delete habit");
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) return <LoadingSpinner />;
@@ -200,6 +256,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    marginRight: 8,
+  },
+  headerButton: {
+    padding: 8,
+    marginLeft: 8,
   },
   header: {
     margin: 16,

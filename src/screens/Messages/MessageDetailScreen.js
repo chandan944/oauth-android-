@@ -10,21 +10,29 @@ import {
   RefreshControl,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { getMessage, addComment } from "../../services/messageService";
+import { useAuth } from "../../context/AuthContext";
+import { 
+  getMessage, 
+  addComment, 
+  deleteMessage,
+  deleteComment 
+} from "../../services/messageService";
 import Card from "../../components/common/Card";
-import Button from "../../components/common/Button";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
-import { formatDate, formatTime } from "../../utils/helpers";
+import { formatDate, formatTime, truncateText } from "../../utils/helpers";
 import { formatText } from "../../utils/formatText";
-import { truncateText } from "../../utils/helpers";
-const MessageDetailScreen = ({ route }) => {
+
+const MessageDetailScreen = ({ route, navigation }) => {
   const { messageId } = route.params;
+  const { user } = useAuth();
   const [message, setMessage] = useState(null);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
     loadMessage();
@@ -68,6 +76,81 @@ const MessageDetailScreen = ({ route }) => {
     }
   };
 
+  const handleDeleteMessage = () => {
+    Alert.alert(
+      "Delete Message",
+      "Are you sure you want to delete this message? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteMessage(messageId);
+              Alert.alert("Success", "Message deleted successfully");
+              navigation.goBack();
+            } catch (error) {
+              console.error("Error deleting message:", error);
+              Alert.alert("Error", "Failed to delete message");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleEditMessage = () => {
+    navigation.navigate("EditMessage", { messageId });
+  };
+
+  const handleDeleteComment = (commentId) => {
+    Alert.alert(
+      "Delete Comment",
+      "Are you sure you want to delete this comment?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteComment(messageId, commentId);
+              Alert.alert("Success", "Comment deleted successfully");
+              loadMessage();
+            } catch (error) {
+              console.error("Error deleting comment:", error);
+              Alert.alert("Error", "Failed to delete comment");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  useEffect(() => {
+    if (isAdmin) {
+      navigation.setOptions({
+        headerRight: () => (
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              onPress={handleEditMessage}
+              style={styles.headerButton}
+            >
+              <Ionicons name="create-outline" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDeleteMessage}
+              style={styles.headerButton}
+            >
+              <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
+            </TouchableOpacity>
+          </View>
+        ),
+      });
+    }
+  }, [navigation, isAdmin]);
+
   if (loading) return <LoadingSpinner />;
   if (!message) return null;
 
@@ -80,14 +163,11 @@ const MessageDetailScreen = ({ route }) => {
       >
         <Card style={styles.messageCard}>
           <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="megaphone" size={32} color={COLORS.primary} />
-            </View>
+            
             <View style={styles.headerInfo}>
-              <Text style={styles.content}>
+              <Text style={styles.title}>
                 {formatText(truncateText(message.title, 1000))}
               </Text>
-
               <Text style={styles.date}>{formatDate(message.createdAt)}</Text>
             </View>
           </View>
@@ -108,8 +188,17 @@ const MessageDetailScreen = ({ route }) => {
                 <Text style={styles.commentDate}>
                   {formatTime(comment.createdAt)}
                 </Text>
+                
+                {isAdmin && (
+                  <TouchableOpacity
+                    onPress={() => handleDeleteComment(comment.id)}
+                    style={styles.deleteCommentButton}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                  </TouchableOpacity>
+                )}
               </View>
-              <Text style={styles.content}>
+              <Text style={styles.commentContent}>
                 {formatText(truncateText(comment.content, 1000))}
               </Text>
             </View>
@@ -143,6 +232,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  headerButtons: {
+    flexDirection: "row",
+    marginRight: 8,
+  },
+  headerButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
   messageCard: {
     margin: 16,
   },
@@ -168,11 +265,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 4,
   },
-  author: {
-    fontSize: 14,
-    color: COLORS.textLight,
-    marginBottom: 2,
-  },
   date: {
     fontSize: 12,
     color: COLORS.grey,
@@ -197,16 +289,15 @@ const styles = StyleSheet.create({
   commentHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
-  },
-  commentAuthor: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.text,
   },
   commentDate: {
     fontSize: 12,
     color: COLORS.grey,
+  },
+  deleteCommentButton: {
+    padding: 4,
   },
   commentContent: {
     fontSize: 14,

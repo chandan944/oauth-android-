@@ -1270,3 +1270,5 @@ export default {
   deleteDiary,
   getDiaryStats,
 };
+
+eas credentials

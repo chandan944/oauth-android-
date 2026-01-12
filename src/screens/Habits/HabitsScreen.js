@@ -6,9 +6,10 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { getMyHabits } from "../../services/habitService";
+import { getMyHabits, deleteHabit } from "../../services/habitService";
 import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -19,6 +20,7 @@ const HabitsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+ 
   useEffect(() => {
     loadHabits();
   }, []);
@@ -40,6 +42,34 @@ const HabitsScreen = ({ navigation }) => {
     loadHabits();
   };
 
+  const handleDeleteHabit = (habitId, habitTitle) => {
+    Alert.alert(
+      "Delete Habit",
+      `Are you sure you want to delete "${habitTitle}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteHabit(habitId);
+              Alert.alert("Success", "Habit deleted successfully");
+              loadHabits();
+            } catch (error) {
+              console.error("Error deleting habit:", error);
+              Alert.alert("Error", "Failed to delete habit");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleEditHabit = (habitId) => {
+    navigation.navigate("EditHabit", { habitId });
+  };
+
   const renderHabit = ({ item }) => (
     <Card
       onPress={() => navigation.navigate("HabitDetail", { habitId: item.id })}
@@ -52,6 +82,24 @@ const HabitsScreen = ({ navigation }) => {
           <Text style={styles.habitTitle}>{item.title}</Text>
           <Text style={styles.habitTarget}>Target: {item.targetValue}</Text>
         </View>
+
+        {/* Admin Action Buttons */}
+       
+          <View style={styles.adminActions}>
+            <TouchableOpacity
+              onPress={() => handleEditHabit(item.id)}
+              style={styles.actionButton}
+            >
+              <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDeleteHabit(item.id, item.title)}
+              style={styles.actionButton}
+            >
+              <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
+            </TouchableOpacity>
+          </View>
+      
       </View>
 
       <View style={styles.stats}>
@@ -156,6 +204,13 @@ const styles = StyleSheet.create({
   habitTarget: {
     fontSize: 14,
     color: COLORS.textLight,
+  },
+  adminActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionButton: {
+    padding: 8,
   },
   stats: {
     flexDirection: "row",

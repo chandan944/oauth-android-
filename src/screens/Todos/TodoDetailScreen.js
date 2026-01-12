@@ -255,7 +255,7 @@ const TodoDetailScreen = ({ route, navigation }) => {
             onPress={handleDelete}
             icon="trash"
             variant="danger"
-            style={styles.actionButton}
+             style={[styles.actionButton, { backgroundColor: "red" }]}
           />
         </View>
       </ScrollView>

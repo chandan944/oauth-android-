@@ -8,14 +8,24 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { createGoal } from '../../services/goalService';
 import Button from '../../components/common/Button';
 import { COLORS } from '../../utils/colors';
 
 const CreateGoalScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
-  const [daysToComplete, setDaysToComplete] = useState('');
+  const [startDate, setStartDate] = useState(new Date());
+  const [targetDate, setTargetDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 30); // Default 30 days from now
+    return date;
+  });
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showTargetPicker, setShowTargetPicker] = useState(false);
   const [priority, setPriority] = useState('Medium');
   const [motivationReason, setMotivationReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,13 +50,6 @@ const CreateGoalScreen = ({ navigation }) => {
     return `${year}-${month}-${day}`;
   };
 
-  // Calculate target date from days
-  const calculateTargetDate = (days) => {
-    const date = new Date();
-    date.setDate(date.getDate() + parseInt(days));
-    return date;
-  };
-
   // Format date for display
   const formatDisplayDate = (date) => {
     return date.toLocaleDateString('en-US', {
@@ -56,8 +59,42 @@ const CreateGoalScreen = ({ navigation }) => {
     });
   };
 
+  // Calculate days between dates
+  const calculateDaysDifference = (start, end) => {
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   const handleQuickPreset = (days) => {
-    setDaysToComplete(days.toString());
+    const newTargetDate = new Date(startDate);
+    newTargetDate.setDate(newTargetDate.getDate() + days);
+    setTargetDate(newTargetDate);
+  };
+
+  const onStartDateChange = (event, selectedDate) => {
+    setShowStartPicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setStartDate(selectedDate);
+      // Ensure target date is after start date
+      if (selectedDate >= targetDate) {
+        const newTargetDate = new Date(selectedDate);
+        newTargetDate.setDate(newTargetDate.getDate() + 7);
+        setTargetDate(newTargetDate);
+      }
+    }
+  };
+
+  const onTargetDateChange = (event, selectedDate) => {
+    setShowTargetPicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      // Ensure target date is after start date
+      if (selectedDate > startDate) {
+        setTargetDate(selectedDate);
+      } else {
+        Alert.alert('Invalid Date', 'Target date must be after start date');
+      }
+    }
   };
 
   const handleCreate = async () => {
@@ -66,22 +103,19 @@ const CreateGoalScreen = ({ navigation }) => {
       return;
     }
 
-    if (!daysToComplete || parseInt(daysToComplete) <= 0) {
-      Alert.alert('Error', 'Please enter a valid number of days (greater than 0)');
+    if (targetDate <= startDate) {
+      Alert.alert('Error', 'Target date must be after start date');
       return;
     }
 
-    const days = parseInt(daysToComplete);
+    const days = calculateDaysDifference(startDate, targetDate);
     if (days > 365) {
-      Alert.alert('Error', 'Maximum 365 days allowed');
+      Alert.alert('Error', 'Maximum 365 days allowed between start and target date');
       return;
     }
 
     setLoading(true);
     try {
-      const startDate = new Date();
-      const targetDate = calculateTargetDate(days);
-
       const startDateFormatted = formatDate(startDate);
       const targetDateFormatted = formatDate(targetDate);
 
@@ -115,6 +149,8 @@ const CreateGoalScreen = ({ navigation }) => {
     }
   };
 
+  const daysDifference = calculateDaysDifference(startDate, targetDate);
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.form}>
@@ -130,54 +166,66 @@ const CreateGoalScreen = ({ navigation }) => {
           placeholderTextColor={COLORS.grey}
         />
 
-        <Text style={styles.label}>Days to Complete *</Text>
+        <Text style={styles.label}>Start Date</Text>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => setShowStartPicker(true)}
+        >
+          <View style={styles.dateButtonContent}>
+            <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.dateButtonText}>{formatDisplayDate(startDate)}</Text>
+          </View>
+          <Ionicons name="chevron-down" size={20} color={COLORS.textLight} />
+        </TouchableOpacity>
+
+        {showStartPicker && (
+          <DateTimePicker
+            value={startDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={onStartDateChange}
+            minimumDate={new Date()}
+          />
+        )}
+
+        <Text style={styles.label}>Target Date *</Text>
         
         {/* Quick Presets */}
-        <View style={styles.presetsContainer}>
-          {quickPresets.map((preset) => (
-            <TouchableOpacity
-              key={preset.days}
-              style={[
-                styles.presetButton,
-                daysToComplete === preset.days.toString() && styles.presetButtonActive
-              ]}
-              onPress={() => handleQuickPreset(preset.days)}
-            >
-              <Text style={[
-                styles.presetText,
-                daysToComplete === preset.days.toString() && styles.presetTextActive
-              ]}>
-                {preset.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        
 
-        <View style={styles.daysInputContainer}>
-          <TextInput
-            style={styles.daysInput}
-            placeholder="Enter number of days"
-            value={daysToComplete}
-            onChangeText={(text) => {
-              // Only allow numbers
-              const numericValue = text.replace(/[^0-9]/g, '');
-              setDaysToComplete(numericValue);
-            }}
-            keyboardType="numeric"
-            placeholderTextColor={COLORS.grey}
-          />
-          <Text style={styles.daysLabel}>days</Text>
-        </View>
-
-        {/* Show calculated target date if days entered */}
-        {daysToComplete && parseInt(daysToComplete) > 0 && (
-          <View style={styles.targetDatePreview}>
-            <Text style={styles.targetDateLabel}>Target Date:</Text>
-            <Text style={styles.targetDateValue}>
-              📅 {formatDisplayDate(calculateTargetDate(parseInt(daysToComplete)))}
-            </Text>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => setShowTargetPicker(true)}
+        >
+          <View style={styles.dateButtonContent}>
+            <Ionicons name="flag-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.dateButtonText}>{formatDisplayDate(targetDate)}</Text>
           </View>
+          <Ionicons name="chevron-down" size={20} color={COLORS.textLight} />
+        </TouchableOpacity>
+
+        {showTargetPicker && (
+          <DateTimePicker
+            value={targetDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={onTargetDateChange}
+            minimumDate={new Date(startDate.getTime() + 86400000)} // Next day from start
+          />
         )}
+
+        {/* Duration Display */}
+        <View style={styles.durationCard}>
+          <View style={styles.durationContent}>
+            <Text style={styles.durationLabel}>Duration</Text>
+            <Text style={styles.durationValue}>{daysDifference} days</Text>
+          </View>
+          <View style={styles.durationDivider} />
+          <View style={styles.durationContent}>
+            <Text style={styles.durationLabel}>Weeks</Text>
+            <Text style={styles.durationValue}>{Math.round(daysDifference / 7)}</Text>
+          </View>
+        </View>
 
         <Text style={styles.label}>Priority</Text>
         <View style={styles.priorityContainer}>
@@ -202,7 +250,7 @@ const CreateGoalScreen = ({ navigation }) => {
           ))}
         </View>
 
-        <Text style={styles.label}>Why is this important? (Optional)</Text>
+        <Text style={styles.label}>Why is this Goal important?</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="What motivates you to achieve this?"
@@ -243,6 +291,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 8,
+    marginTop: 8,
   },
   input: {
     backgroundColor: COLORS.white,
@@ -256,6 +305,27 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 100,
     textAlignVertical: 'top',
+  },
+  dateButton: {
+    backgroundColor: COLORS.white,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dateButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: COLORS.text,
+    fontWeight: '500',
   },
   presetsContainer: {
     flexDirection: 'row',
@@ -283,46 +353,34 @@ const styles = StyleSheet.create({
   presetTextActive: {
     color: COLORS.primary,
   },
-  daysInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  daysInput: {
-    flex: 1,
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    padding: 16,
-    textAlign: 'center',
-  },
-  daysLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.textLight,
-    paddingRight: 8,
-  },
-  targetDatePreview: {
+  durationCard: {
     backgroundColor: COLORS.primary + '10',
-    padding: 16,
+    padding: 20,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
   },
-  targetDateLabel: {
+  durationContent: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  durationLabel: {
     fontSize: 12,
     color: COLORS.textLight,
     marginBottom: 4,
+    fontWeight: '500',
   },
-  targetDateValue: {
-    fontSize: 16,
+  durationValue: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.primary,
+  },
+  durationDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: COLORS.primary + '30',
   },
   priorityContainer: {
     flexDirection: 'row',

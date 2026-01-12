@@ -9,8 +9,8 @@ import {
   Alert,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { useAuth } from "../../context/AuthContext"; // ✅ Use Auth Context
-import { getAllMessages } from "../../services/messageService";
+import { useAuth } from "../../context/AuthContext";
+import { getAllMessages, deleteMessage } from "../../services/messageService";
 import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -19,21 +19,15 @@ import { formatDate, truncateText } from "../../utils/helpers";
 import { formatText } from "../../utils/formatText";
 
 const MessagesScreen = ({ navigation }) => {
-  const { user } = useAuth(); // ✅ Get user from context
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ✅ Check if user is admin directly from user object
   const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
     loadMessages();
-    
-    // ✅ Debug log to verify role
-    console.log("🔍 User Info:", user);
-    console.log("🔍 User Role:", user?.role);
-    console.log("🔍 Is Admin:", isAdmin);
   }, []);
 
   const loadMessages = async () => {
@@ -54,6 +48,34 @@ const MessagesScreen = ({ navigation }) => {
     loadMessages();
   };
 
+  const handleDeleteMessage = (messageId, messageTitle) => {
+    Alert.alert(
+      "Delete Message",
+      `Are you sure you want to delete "${truncateText(messageTitle, 50)}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteMessage(messageId);
+              Alert.alert("Success", "Message deleted successfully");
+              loadMessages();
+            } catch (error) {
+              console.error("Error deleting message:", error);
+              Alert.alert("Error", "Failed to delete message");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleEditMessage = (messageId) => {
+    navigation.navigate("EditMessage", { messageId });
+  };
+
   const renderMessage = ({ item }) => (
     <Card
       onPress={() =>
@@ -65,14 +87,33 @@ const MessagesScreen = ({ navigation }) => {
           <Ionicons name="megaphone" size={24} color={COLORS.primary} />
         </View>
         <View style={styles.headerInfo}>
-           <Text style={styles.content}>
-        {formatText(truncateText(item.title, 1000))}
-      </Text>
-         
+          <Text style={styles.title}>
+            {formatText(truncateText(item.title, 100))}
+          </Text>
         </View>
+        
+        {/* Admin Action Buttons */}
+        {isAdmin && (
+          <View style={styles.adminActions}>
+            <TouchableOpacity
+              onPress={() => handleEditMessage(item.id)}
+              style={styles.actionButton}
+            >
+              <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDeleteMessage(item.id, item.title)}
+              style={styles.actionButton}
+            >
+              <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
-      <Text style={styles.content}>{formatText(truncateText(item.content, 120))}</Text>
+      <Text style={styles.content}>
+        {formatText(truncateText(item.content, 120))}
+      </Text>
 
       <View style={styles.footer}>
         <View style={styles.stat}>
@@ -105,7 +146,6 @@ const MessagesScreen = ({ navigation }) => {
         }
       />
 
-      {/* ✅ Floating Action Button - Only shows for ADMIN */}
       {isAdmin && (
         <TouchableOpacity
           style={styles.fab}
@@ -149,9 +189,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.text,
   },
-  author: {
-    fontSize: 12,
-    color: COLORS.textLight,
+  adminActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionButton: {
+    padding: 8,
   },
   content: {
     fontSize: 14,
@@ -180,7 +223,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textLight,
   },
-  // ✅ Floating Action Button Style
   fab: {
     position: "absolute",
     right: 20,

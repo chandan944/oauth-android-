@@ -9,24 +9,38 @@ import { ActivityIndicator, View } from "react-native";
 
 // Auth Screens
 import LoginScreen from "../screens/Auth/LoginScreen";
-import RegisterScreen from "../screens/Auth/RegisterScreen";
 
-// Main Screens
+// Diary Screens
 import DiaryFeedScreen from "../screens/Diary/DiaryFeedScreen";
 import MyDiariesScreen from "../screens/Diary/MyDiariesScreen";
 import CreateDiaryScreen from "../screens/Diary/CreateDiaryScreen";
+
+// Analytics Screens
 import MoodAnalyticsScreen from "../screens/Analytics/MoodAnalyticsScreen";
 import ProgressDashboardScreen from "../screens/Analytics/ProgressDashboardScreen";
+
+// Messages Screens
 import MessagesScreen from "../screens/Messages/MessagesScreen";
 import MessageDetailScreen from "../screens/Messages/MessageDetailScreen";
 import CreateMessageScreen from "../screens/Messages/CreateMessageScreen";
+import EditMessageScreen from "../screens/Messages/EditMessageScreen";
+
+// Habits Screens
 import HabitsScreen from "../screens/Habits/HabitsScreen";
 import CreateHabitScreen from "../screens/Habits/CreateHabitScreen";
 import HabitDetailScreen from "../screens/Habits/HabitDetailScreen";
+import EditHabitScreen from "../screens/Habits/EditHabitScreen";
+
+// Goals Screens
 import GoalsScreen from "../screens/Goals/GoalsScreen";
 import CreateGoalScreen from "../screens/Goals/CreateGoalScreen";
 import GoalDetailScreen from "../screens/Goals/GoalDetailScreen";
+import EditGoalScreen from "../screens/Goals/EditGoalScreen";
+
+// Profile Screen
 import ProfileScreen from "../screens/Profile/ProfileScreen";
+
+// Todos Screens
 import TodosScreen from "../screens/Todos/TodosScreen";
 import CreateTodoScreen from "../screens/Todos/CreateTodoScreen";
 import EditTodoScreen from "../screens/Todos/EditTodoScreen";
@@ -36,7 +50,6 @@ import TodoAnalyticsScreen from "../screens/Todos/TodoAnalyticsScreen";
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Auth Stack - Only Login (No Register)
 const AuthStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Login" component={LoginScreen} />
@@ -78,7 +91,7 @@ const TodosStack = () => (
     />
   </Stack.Navigator>
 );
-// Diary Stack
+
 const DiaryStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -105,7 +118,6 @@ const DiaryStack = () => (
   </Stack.Navigator>
 );
 
-// Analytics Stack
 const AnalyticsStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -127,7 +139,6 @@ const AnalyticsStack = () => (
   </Stack.Navigator>
 );
 
-// ✅ FIXED: Messages Stack - Correct Screen Order
 const MessagesStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -136,30 +147,29 @@ const MessagesStack = () => (
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
-    {/* ✅ MAIN SCREEN FIRST - This is what shows when tab is clicked */}
     <Stack.Screen
       name="MessagesList"
       component={MessagesScreen}
       options={{ title: "📢 Messages" }}
     />
-    
-    {/* ✅ DETAIL SCREEN - For viewing individual messages */}
     <Stack.Screen
       name="MessageDetail"
       component={MessageDetailScreen}
       options={{ title: "💬 Message" }}
     />
-    
-    {/* ✅ CREATE SCREEN LAST - Only accessible via FAB button navigation */}
     <Stack.Screen
       name="CreateMessage"
       component={CreateMessageScreen}
       options={{ title: "✍️ Create Message" }}
     />
+    <Stack.Screen
+      name="EditMessage"
+      component={EditMessageScreen}
+      options={{ title: "✏️ Edit Message" }}
+    />
   </Stack.Navigator>
 );
 
-// Habits Stack
 const HabitsStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -183,10 +193,14 @@ const HabitsStack = () => (
       component={HabitDetailScreen}
       options={{ title: "📊 Habit Details" }}
     />
+    <Stack.Screen
+      name="EditHabit"
+      component={EditHabitScreen}
+      options={{ title: "✏️ Edit Habit" }}
+    />
   </Stack.Navigator>
 );
 
-// Goals Stack
 const GoalsStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -210,10 +224,14 @@ const GoalsStack = () => (
       component={GoalDetailScreen}
       options={{ title: "📊 Goal Details" }}
     />
+    <Stack.Screen
+      name="EditGoal"
+      component={EditGoalScreen}
+      options={{ title: "✏️ Edit Goal" }}
+    />
   </Stack.Navigator>
 );
 
-// Main Tab Navigator
 const MainTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
@@ -231,7 +249,7 @@ const MainTabs = () => (
           case "Messages":
             iconName = focused ? "chatbubbles" : "chatbubbles-outline";
             break;
-          case "Todos":  // ✅ NEW
+          case "Todos":
             iconName = focused ? "checkbox" : "checkbox-outline";
             break;
           case "Habits":
@@ -271,20 +289,26 @@ const MainTabs = () => (
     <Tab.Screen name="Diary" component={DiaryStack} />
     <Tab.Screen name="Analytics" component={AnalyticsStack} />
     <Tab.Screen name="Messages" component={MessagesStack} />
-    <Tab.Screen name="Todos" component={TodosStack} />  {/* ✅ NEW */}
+    <Tab.Screen name="Todos" component={TodosStack} />
     <Tab.Screen name="Habits" component={HabitsStack} />
     <Tab.Screen name="Goals" component={GoalsStack} />
     <Tab.Screen name="Profile" component={ProfileScreen} />
   </Tab.Navigator>
 );
 
-// Main App Navigator
 const AppNavigator = () => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: COLORS.white,
+        }}
+      >
         <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
