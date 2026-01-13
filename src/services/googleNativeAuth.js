@@ -19,7 +19,6 @@ export const signInWithGoogleNative = async () => {
   const credential = GoogleAuthProvider.credential(idToken);
   const userCred = await signInWithCredential(auth(), credential);
 
-  console.log('✅ Firebase login success');
 
   // 🔥 SEND TOKEN TO BACKEND
   const response = await api.post('/auth/firebase', {

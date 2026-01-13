@@ -27,11 +27,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     "owner": "najahex886",
     "extra": {
-     
+      "eas": {
+        "projectId": "6a7c1dac-feb1-4ac4-990a-c336d005e323"
+      }
     }
   }
 }
