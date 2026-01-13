@@ -44,7 +44,7 @@ const HabitDetailScreen = ({ route, navigation }) => {
               onPress={handleEditHabit}
               style={styles.headerButton}
             >
-              <Ionicons name="create-outline" size={24} color={COLORS.primary} />
+              <Ionicons name="eyedrop" size={24} color={COLORS.success} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleDeleteHabit}
@@ -156,7 +156,7 @@ const HabitDetailScreen = ({ route, navigation }) => {
     >
       <Card style={styles.header}>
         <View style={styles.iconContainer}>
-          <Ionicons name="balloon-sharp" size={48} color={COLORS.success} />
+          <Ionicons name="balloon-sharp" size={48} color={COLORS.error} />
         </View>
         <Text style={styles.title}>{habit.title}</Text>
         <Text style={styles.target}>Target: {habit.targetValue}</Text>

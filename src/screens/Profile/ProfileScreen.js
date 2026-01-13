@@ -113,12 +113,12 @@ const ProfileScreen = () => {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={['#ff6b6b', '#ee5a6f']}
+            colors={['#f7faf7', '#19ee23']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.logoutGradient}
           >
-            <Ionicons name="log-out-outline" size={24} color="#fff" />
+            <Ionicons name="log-out-outline" size={24} color="#070707" />
             <Text style={styles.logoutText}>Logout</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
      marginTop:200,
     borderRadius: 16,
-    shadowColor: '#ff6b6b',
+    shadowColor: '#0e0c0c',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#fff',
+    color: '#0c0c0c',
     letterSpacing: 0.5,
   },
   footer: {

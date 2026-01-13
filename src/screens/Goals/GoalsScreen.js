@@ -135,7 +135,7 @@ const GoalsScreen = ({ navigation }) => {
           onPress={() => navigation.navigate("CreateGoal")}
         >
           <Ionicons name="add" size={24} color={COLORS.white} />
-          <Text style={styles.addButtonText}>New Goal</Text>
+          {/* <Text style={styles.addButtonText}>New Goal</Text> */}
         </TouchableOpacity>
       </View>
 
@@ -172,9 +172,10 @@ const styles = StyleSheet.create({
   },
   addButton: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.primary,
+    // alignItems: "center",
+    // justifyContent: "center",
+    width:"16%",
+    backgroundColor: "#010501",
     padding: 14,
     borderRadius: 12,
     shadowColor: COLORS.primary,

@@ -59,7 +59,7 @@ const AuthStack = () => (
 const TodosStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: COLORS.primary },
+      headerStyle: { backgroundColor: COLORS.success },
       headerTintColor: COLORS.white,
       headerTitleStyle: { fontWeight: "bold" },
     }}
@@ -105,8 +105,8 @@ const TodosStack = () => (
 const DiaryStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: COLORS.primary },
-      headerTintColor: COLORS.white,
+      headerStyle: { backgroundColor: "#08FCFC" },
+      headerTintColor: "#4f5252",
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
@@ -119,7 +119,7 @@ const DiaryStack = () => (
           <Ionicons 
             name="home" 
             size={24} 
-            color={COLORS.white} 
+            color= "#4f5252" 
             style={{ marginLeft: 15 }} 
           />
         )
@@ -172,7 +172,7 @@ const AnalyticsStack = () => (
 const MessagesStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: COLORS.primary },
+      headerStyle: { backgroundColor: COLORS.black },
       headerTintColor: COLORS.white,
       headerTitleStyle: { fontWeight: "bold" },
     }}
@@ -213,8 +213,8 @@ const MessagesStack = () => (
 const HabitsStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: COLORS.primary },
-      headerTintColor: COLORS.white,
+      headerStyle: { backgroundColor: COLORS.cardBg },
+      headerTintColor: COLORS.black,
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
@@ -227,7 +227,7 @@ const HabitsStack = () => (
           <Ionicons 
             name="checkmark-circle" 
             size={24} 
-            color={COLORS.white} 
+            color={COLORS.black} 
             style={{ marginLeft: 15 }} 
           />
         )
@@ -254,7 +254,7 @@ const HabitsStack = () => (
 const GoalsStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: COLORS.primary },
+      headerStyle: { backgroundColor: "#8AFF8A" },
       headerTintColor: COLORS.white,
       headerTitleStyle: { fontWeight: "bold" },
     }}
@@ -329,12 +329,12 @@ const MainTabs = () => (
 
         return <Ionicons name={iconName} size={size} color={color} />;
       },
-      tabBarActiveTintColor: COLORS.primary,
+      tabBarActiveTintColor: COLORS.black,
       tabBarInactiveTintColor: COLORS.grey,
       tabBarStyle: {
         paddingBottom: 5,
         paddingTop: 5,
-        marginBottom: 20,
+        marginBottom: 40,
         height: 60,
         backgroundColor: COLORS.white,
         borderTopWidth: 1,
