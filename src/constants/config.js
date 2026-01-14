@@ -1,4 +1,4 @@
-export const API_BASE_URL = "https://self-help-7.onrender.com";
+export const API_BASE_URL = "https://self-help-4b9y.onrender.com";
 
 export const ENDPOINTS = {
   // Diaries

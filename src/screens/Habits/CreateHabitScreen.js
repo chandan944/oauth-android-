@@ -6,6 +6,8 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { createHabit } from '../../services/habitService';
 import Button from '../../components/common/Button';
@@ -15,6 +17,7 @@ const CreateHabitScreen = ({ navigation }) => {
   const [title, setTitle] = useState('');
   const [targetValue, setTargetValue] = useState('');
   const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
 
   const handleCreate = async () => {
     if (!title || !targetValue) {
@@ -37,30 +40,66 @@ const CreateHabitScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.header}>
+        <View style={styles.emojiContainer}>
+          <Text style={styles.emoji}>💛</Text>
+        </View>
+        <Text style={styles.title}>Create New Habit</Text>
+        <Text style={styles.subtitle}>Build a new healthy habit and track your progress</Text>
+      </View>
+
       <View style={styles.form}>
-        <Text style={styles.emoji}>🔁</Text>
-        <Text style={styles.subtitle}>Build a new healthy habit</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Habit Name</Text>
+          <View style={[
+            styles.inputContainer,
+            focusedField === 'title' && styles.inputContainerFocused
+          ]}>
+            <Text style={styles.inputIcon}>✏️</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Morning Exercise"
+              value={title}
+              onChangeText={setTitle}
+              onFocus={() => setFocusedField('title')}
+              onBlur={() => setFocusedField(null)}
+              placeholderTextColor="#A0A0A0"
+            />
+          </View>
+        </View>
 
-        <Text style={styles.label}>Habit Name *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., Morning Exercise"
-          value={title}
-          onChangeText={setTitle}
-          placeholderTextColor={COLORS.grey}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Daily Target</Text>
+          <View style={[
+            styles.inputContainer,
+            focusedField === 'target' && styles.inputContainerFocused
+          ]}>
+            <Text style={styles.inputIcon}>🎯</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., 30 minutes daily"
+              value={targetValue}
+              onChangeText={setTargetValue}
+              onFocus={() => setFocusedField('target')}
+              onBlur={() => setFocusedField(null)}
+              placeholderTextColor="#A0A0A0"
+            />
+          </View>
+        </View>
+
+        
+
+        <Button 
+          title="Create Habit" 
+          onPress={handleCreate} 
+          loading={loading}
+          style={styles.createButton}
         />
-
-        <Text style={styles.label}>Target *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., 30 minutes daily"
-          value={targetValue}
-          onChangeText={setTargetValue}
-          placeholderTextColor={COLORS.grey}
-        />
-
-        <Button title="Create Habit" onPress={handleCreate} loading={loading} />
       </View>
     </ScrollView>
   );
@@ -69,36 +108,118 @@ const CreateHabitScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F8F9FA',
   },
-  form: {
-    padding: 16,
+  scrollContent: {
+    paddingBottom: 32,
+  },
+  header: {
+    backgroundColor: COLORS.primary || '#6C63FF',
+    paddingTop: 48,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    alignItems: 'center',
+  },
+  emojiContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   emoji: {
-    fontSize: 64,
+    fontSize: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 8,
     textAlign: 'center',
-    marginVertical: 16,
   },
   subtitle: {
-    fontSize: 16,
-    color: COLORS.textLight,
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
-    marginBottom: 32,
+    lineHeight: 22,
+  },
+  form: {
+    padding: 24,
+    marginTop: -16,
+  },
+  inputGroup: {
+    marginBottom: 24,
   },
   label: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 8,
+    color: '#2C3E50',
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: '#E8E8E8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  inputContainerFocused: {
+    borderColor: COLORS.primary || '#6C63FF',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  inputIcon: {
+    fontSize: 20,
+    marginRight: 12,
   },
   input: {
-    backgroundColor: COLORS.white,
-    padding: 16,
-    borderRadius: 12,
+    flex: 1,
     fontSize: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    color: '#2C3E50',
+    paddingVertical: 16,
+  },
+  tipCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF8E1',
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFC107',
+  },
+  tipIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  tipContent: {
+    flex: 1,
+  },
+  tipTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F57C00',
+    marginBottom: 4,
+  },
+  tipText: {
+    fontSize: 13,
+    color: '#6D4C41',
+    lineHeight: 20,
+  },
+  createButton: {
+    marginTop: 16,
   },
 });
 

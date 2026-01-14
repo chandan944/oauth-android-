@@ -23,12 +23,15 @@ export const formatText = (text) => {
         <Text
           key={index}
           style={{
-            
-            backgroundColor: "yellow",
-            color: "#000",
-            paddingHorizontal: 4,
-            borderRadius: 10,
-            marginHorizontal:3
+            fontWeight: "600",
+            color: "#ffef0d",
+            backgroundColor: "rgba(255,239,13,0.15)",
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            borderRadius: 16,
+            marginHorizontal: 4,
+            borderWidth: 1,
+            borderColor: "rgba(255,239,13,0.6)",
           }}
         >
           {part.slice(1, -1)}

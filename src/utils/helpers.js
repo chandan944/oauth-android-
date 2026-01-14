@@ -9,7 +9,16 @@ export const formatDate = (dateString) => {
     return 'Invalid date';
   }
 };
-
+// utils/helpers.js
+export const formatDateForDisplay = (date) => {
+  if (!date) return '';
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
 // Format time
 export const formatTime = (dateString) => {
   try {

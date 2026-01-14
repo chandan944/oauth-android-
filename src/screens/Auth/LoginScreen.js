@@ -9,6 +9,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,17 +20,18 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { COLORS } from "../../utils/colors";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
-const AnimatedFeature = ({ icon, text, delay }) => {
+const AnimatedFeature = ({ icon, text, color, delay }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 1000,
         delay,
         useNativeDriver: true,
       }),
@@ -37,6 +39,13 @@ const AnimatedFeature = ({ icon, text, delay }) => {
         toValue: 0,
         delay,
         friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        delay,
+        friction: 6,
         tension: 40,
         useNativeDriver: true,
       }),
@@ -49,33 +58,46 @@ const AnimatedFeature = ({ icon, text, delay }) => {
         styles.feature,
         {
           opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
+          transform: [
+            { translateY: slideAnim },
+            { scale: scaleAnim }
+          ],
         },
       ]}
     >
-      <View style={styles.featureIconContainer}>
-        <Ionicons name={icon} size={28} color={COLORS.white} />
-      </View>
+      <LinearGradient
+        colors={[color + '30', color + '10']}
+        style={styles.featureIconContainer}
+      >
+        <Ionicons name={icon} size={32} color={color} />
+      </LinearGradient>
       <Text style={styles.featureText}>{text}</Text>
     </Animated.View>
   );
 };
 
-const FloatingOrb = ({ delay, size, top, left }) => {
+const FloatingOrb = ({ delay, size, top, left, colors }) => {
   const floatAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, {
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(floatAnim, {
+            toValue: 1,
+            duration: 4000 + delay,
+            useNativeDriver: true,
+          }),
+          Animated.timing(floatAnim, {
+            toValue: 0,
+            duration: 4000 + delay,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.timing(rotateAnim, {
           toValue: 1,
-          duration: 3000,
-          delay,
-          useNativeDriver: true,
-        }),
-        Animated.timing(floatAnim, {
-          toValue: 0,
-          duration: 3000,
+          duration: 8000,
           useNativeDriver: true,
         }),
       ])
@@ -84,7 +106,12 @@ const FloatingOrb = ({ delay, size, top, left }) => {
 
   const translateY = floatAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -20],
+    outputRange: [0, -30],
+  });
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
   });
 
   return (
@@ -96,7 +123,60 @@ const FloatingOrb = ({ delay, size, top, left }) => {
           height: size,
           top,
           left,
+          transform: [{ translateY }, { rotate }],
+        },
+      ]}
+    >
+      <LinearGradient
+        colors={colors}
+        style={styles.orbGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+    </Animated.View>
+  );
+};
+
+const ParticleEffect = ({ delay }) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0.6,
+            duration: 1000,
+            delay,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: -100,
+            duration: 3000,
+            delay,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start(() => {
+      translateY.setValue(0);
+    });
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.particle,
+        {
+          opacity,
           transform: [{ translateY }],
+          left: Math.random() * width,
         },
       ]}
     />
@@ -108,27 +188,34 @@ const LoginScreen = ({ navigation }) => {
   const { handleGoogleAuth, isAuthenticated } = useAuth();
 
   const logoScale = useRef(new Animated.Value(0)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(0.8)).current;
   const buttonOpacity = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Configure Google Sign-In
     GoogleSignin.configure({
       webClientId:
         "726369306394-nc6s5p1esot3cgnfh2ikmjpukbbppii5.apps.googleusercontent.com",
       offlineAccess: true,
       forceCodeForRefreshToken: true,
     });
-    console.log("✅ Google Sign-In configured");
 
     // Entrance animations
     Animated.sequence([
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 4,
-        tension: 40,
-        useNativeDriver: true,
-      }),
+      Animated.parallel([
+        Animated.spring(logoScale, {
+          toValue: 1,
+          friction: 5,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoRotate, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ]),
       Animated.parallel([
         Animated.spring(buttonScale, {
           toValue: 1,
@@ -137,28 +224,33 @@ const LoginScreen = ({ navigation }) => {
         }),
         Animated.timing(buttonOpacity, {
           toValue: 1,
-          duration: 600,
+          duration: 800,
           useNativeDriver: true,
         }),
       ]),
     ]).start();
+
+    // Continuous glow animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log(
-        "🎉 User is authenticated, navigation will be handled by AppNavigator"
-      );
-    }
-  }, [isAuthenticated]);
-
   const handleGoogleSignIn = async () => {
-    console.log("🚀 Starting Google Sign In...");
-
-    // Button press animation
     Animated.sequence([
       Animated.timing(buttonScale, {
-        toValue: 0.95,
+        toValue: 0.92,
         duration: 100,
         useNativeDriver: true,
       }),
@@ -175,10 +267,8 @@ const LoginScreen = ({ navigation }) => {
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
-      console.log("✅ Play Services available");
 
       const result = await GoogleSignin.signIn();
-      console.log("✅ Sign-in successful!");
 
       let user, idToken;
 
@@ -212,14 +302,10 @@ const LoginScreen = ({ navigation }) => {
           "Login Failed",
           authResult.message || "Authentication failed"
         );
-      } else {
-        console.log("🎉 Login successful!");
       }
     } catch (error) {
-      console.log("❌ Sign-in error:", error);
-
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log("User cancelled the login");
+        // User cancelled
       } else if (error.code === statusCodes.IN_PROGRESS) {
         Alert.alert("Please wait", "Sign-in is already in progress");
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
@@ -235,101 +321,172 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  const rotate = logoRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.8],
+  });
+
   return (
-    <LinearGradient
-      colors={["#667eea", "#764ba2", "#f093fb"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
-    >
-      {/* Floating Background Orbs */}
-      <FloatingOrb delay={0} size={120} top={100} left={-40} />
-      <FloatingOrb delay={500} size={80} top={200} left={width - 60} />
-      <FloatingOrb delay={1000} size={100} top={400} left={40} />
-      <FloatingOrb delay={1500} size={60} top={600} left={width - 80} />
+    <>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={['#667eea', '#764ba2', '#f093fb', '#fccb90']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container}
+      >
+        {/* Floating Background Orbs */}
+        <FloatingOrb 
+          delay={0} 
+          size={150} 
+          top={80} 
+          left={-50} 
+          colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']} 
+        />
+        <FloatingOrb 
+          delay={500} 
+          size={100} 
+          top={height * 0.25} 
+          left={width - 70} 
+          colors={['rgba(252,203,144,0.2)', 'rgba(252,203,144,0.08)']} 
+        />
+        <FloatingOrb 
+          delay={1000} 
+          size={120} 
+          top={height * 0.5} 
+          left={30} 
+          colors={['rgba(240,147,251,0.2)', 'rgba(240,147,251,0.08)']} 
+        />
+        <FloatingOrb 
+          delay={1500} 
+          size={80} 
+          top={height * 0.7} 
+          left={width - 100} 
+          colors={['rgba(102,126,234,0.2)', 'rgba(102,126,234,0.08)']} 
+        />
 
-      <View style={styles.content}>
-        <Animated.View
-          style={[styles.logoSection, { transform: [{ scale: logoScale }] }]}
-        >
-          <View style={styles.logoContainer}>
-            <LinearGradient
-              colors={["rgba(255,255,255,0.3)", "rgba(255,255,255,0.1)"]}
-              style={styles.logoGradient}
-            >
-              <Image
-                source={require("../../../assets/icon.png")} // or uri
-                style={styles.logoImage}
-              />
-            </LinearGradient>
-          </View>
+        {/* Particle Effects */}
+        {[...Array(8)].map((_, i) => (
+          <ParticleEffect key={i} delay={i * 400} />
+        ))}
 
-          <View style={styles.taglineContainer}>
-            <Text style={styles.tagline}>Your Personal Growth Companion</Text>
-          </View>
-        </Animated.View>
-
-        <View style={styles.features}>
-          <AnimatedFeature icon="book" text="Track Mood" delay={300} />
-          <AnimatedFeature
-            icon="checkmark-circle"
-            text="Build Habits"
-            delay={500}
-          />
-          <AnimatedFeature icon="flag" text="Achieve Goals" delay={700} />
-        </View>
-
-        <Animated.View
-          style={[
-            styles.authSection,
-            {
-              opacity: buttonOpacity,
-              transform: [{ scale: buttonScale }],
-            },
-          ]}
-        >
-          <TouchableOpacity
+        <View style={styles.content}>
+          <Animated.View
             style={[
-              styles.googleButton,
-              loading && styles.googleButtonDisabled,
+              styles.logoSection,
+              { transform: [{ scale: logoScale }, { rotate }] }
             ]}
-            onPress={handleGoogleSignIn}
-            disabled={loading}
-            activeOpacity={0.9}
           >
-            <LinearGradient
-              colors={["#ffffff", "#f8f9fa"]}
-              style={styles.googleButtonGradient}
-            >
-              {loading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color={COLORS.primary} />
-                  <Text style={styles.loadingText}>Signing in...</Text>
-                </View>
-              ) : (
-                <>
-                  <View style={styles.googleIconContainer}>
-                    <Ionicons name="logo-google" size={24} color="#DB4437" />
-                  </View>
-                  <Text style={styles.googleButtonText}>
-                    Continue with Google
-                  </Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+            <View style={styles.logoContainer}>
+              <Animated.View style={[styles.glowRing, { opacity: glowOpacity }]} />
+              <LinearGradient
+                colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.15)']}
+                style={styles.logoGradient}
+              >
+                <Image
+                  source={require("../../../assets/icon.png")}
+                  style={styles.logoImage}
+                />
+              </LinearGradient>
+            </View>
 
-          <View style={styles.securityBadge}>
-            <Ionicons
-              name="shield-checkmark"
-              size={16}
-              color="rgba(255,255,255,0.8)"
+            <View style={styles.titleContainer}>
+              <Text style={styles.appName}>Self Help</Text>
+              <View style={styles.taglineContainer}>
+                <Ionicons name="sparkles" size={14} color="#FFD700" />
+                <Text style={styles.tagline}>Your Personal Growth Companion</Text>
+                <Ionicons name="sparkles" size={14} color="#FFD700" />
+              </View>
+            </View>
+          </Animated.View>
+
+          <View style={styles.features}>
+            <AnimatedFeature 
+              icon="happy" 
+              text="Track Mood" 
+              color="#FF6B9D" 
+              delay={400} 
             />
-            <Text style={styles.securityText}>Secure Authentication</Text>
+            <AnimatedFeature
+              icon="checkmark-circle"
+              text="Build Habits"
+              color="#50E3C2"
+              delay={600}
+            />
+            <AnimatedFeature 
+              icon="flag" 
+              text="Achieve Goals" 
+              color="#FFA500" 
+              delay={800} 
+            />
           </View>
-        </Animated.View>
-      </View>
-    </LinearGradient>
+
+          <Animated.View
+            style={[
+              styles.authSection,
+              {
+                opacity: buttonOpacity,
+                transform: [{ scale: buttonScale }],
+              },
+            ]}
+          >
+            <View style={styles.benefitsList}>
+              <View style={styles.benefitItem}>
+                <Ionicons name="lock-closed" size={16} color="rgba(255,255,255,0.9)" />
+                <Text style={styles.benefitText}>100% Secure & Private</Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <Ionicons name="flash" size={16} color="rgba(255,255,255,0.9)" />
+                <Text style={styles.benefitText}>Instant Access</Text>
+              </View>
+              
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.googleButton,
+                loading && styles.googleButtonDisabled,
+              ]}
+              onPress={handleGoogleSignIn}
+              disabled={loading}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={['#ffffff', '#f8f9fa', '#ffffff']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.googleButtonGradient}
+              >
+                {loading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#667eea" />
+                    <Text style={styles.loadingText}>Signing you in...</Text>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.googleIconContainer}>
+                      <Ionicons name="logo-google" size={26} color="#DB4437" />
+                    </View>
+                    <Text style={styles.googleButtonText}>
+                      Continue with Google
+                    </Text>
+                    <Ionicons name="arrow-forward" size={20} color="#667eea" />
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+           
+            
+          </Animated.View>
+        </View>
+      </LinearGradient>
+    </>
   );
 };
 
@@ -340,75 +497,104 @@ const styles = StyleSheet.create({
   floatingOrb: {
     position: "absolute",
     borderRadius: 1000,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    opacity: 0.6,
+    overflow: 'hidden',
+  },
+  orbGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 1000,
+  },
+  particle: {
+    position: 'absolute',
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.8)',
   },
   content: {
     flex: 1,
     justifyContent: "space-between",
-    padding: 32,
-    paddingTop: 100,
-    paddingBottom: 50,
+    padding: 10,
+    paddingTop: height * 0.12,
+    paddingBottom: 10,
   },
   logoSection: {
     alignItems: "center",
   },
   logoContainer: {
     marginBottom: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glowRing: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 30,
+  },
+  logoGradient: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 4,
+    borderColor: "rgba(255,255,255,0.5)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.4,
+    shadowRadius: 25,
+    elevation: 15,
   },
   logoImage: {
-    width: 130,
-    height: 130,
-    borderRadius: 90,
-    resizeMode: "contain",
-  },
-
-  logoGradient: {
     width: 140,
     height: 140,
     borderRadius: 70,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "rgba(255,255,255,0.3)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
+    resizeMode: "contain",
   },
-  logo: {
-    fontSize: 72,
+  titleContainer: {
+    alignItems: 'center',
+    gap: 12,
   },
   appName: {
-    fontSize: 42,
-    fontWeight: "800",
+    fontSize: 48,
+    fontWeight: "900",
     color: COLORS.white,
-    marginBottom: 12,
-    letterSpacing: 1,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
+    letterSpacing: 2,
+    textShadowColor: "rgba(0, 0, 0, 0.4)",
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 15,
   },
   taglineContainer: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.3)",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   tagline: {
     fontSize: 15,
     color: COLORS.white,
-    textAlign: "center",
-    fontWeight: "500",
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   features: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginVertical: 40,
+    marginVertical: 50,
     paddingHorizontal: 10,
   },
   feature: {
@@ -416,73 +602,94 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
+    marginBottom: 14,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.4)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
   featureText: {
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.white,
-    fontWeight: "600",
+    fontWeight: "700",
     textAlign: "center",
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   authSection: {
     alignItems: "center",
   },
+  benefitsList: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 24,
+    paddingHorizontal: 10,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  benefitText: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.95)',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
   googleButton: {
     width: "100%",
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 15,
+     marginBottom:150
   },
   googleButtonDisabled: {
     opacity: 0.7,
+     marginBottom:150
   },
   googleButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 18,
+    paddingVertical: 20,
     paddingHorizontal: 32,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
+    gap: 12,
+   
   },
   googleIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
     shadowColor: "#DB4437",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
   },
   googleButtonText: {
     flex: 1,
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#333",
-    letterSpacing: 0.3,
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    letterSpacing: 0.5,
   },
   loadingContainer: {
     flexDirection: "row",
@@ -491,27 +698,35 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#666",
+    fontWeight: "700",
+    color: "#667eea",
     marginLeft: 12,
   },
   securityBadge: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 20,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    marginTop: 24,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.3)",
+    gap: 8,
   },
   securityText: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.9)",
-    marginLeft: 6,
-    fontWeight: "600",
+    color: "rgba(255,255,255,0.95)",
+    fontWeight: "700",
     letterSpacing: 0.3,
+  },
+  termsText: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    marginTop: 16,
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
 });
 

@@ -31,18 +31,7 @@ const ProfileScreen = () => {
     ]);
   };
 
-  const statsData = [
-    { icon: "calendar-outline", label: "Days Active", value: "42" },
-    { icon: "trophy-outline", label: "Goals", value: "8" },
-    { icon: "heart-outline", label: "Habits", value: "12" },
-  ];
-
-  const menuItems = [
-    { icon: "settings-outline", label: "Settings", color: "#6366F1" },
-    { icon: "notifications-outline", label: "Notifications", color: "#8B5CF6" },
-    { icon: "shield-checkmark-outline", label: "Privacy", color: "#EC4899" },
-    { icon: "help-circle-outline", label: "Help & Support", color: "#10B981" },
-  ];
+  
 
   return (
     <View style={styles.container}>

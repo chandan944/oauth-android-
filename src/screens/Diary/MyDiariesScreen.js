@@ -7,8 +7,10 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  Platform,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { getMyDiaries, deleteDiary } from "../../services/diaryService";
 import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
@@ -19,14 +21,19 @@ import { formatText } from "../../utils/formatText";
 
 const MyDiariesScreen = ({ navigation }) => {
   const [diaries, setDiaries] = useState([]);
+  const [filteredDiaries, setFilteredDiaries] = useState([]); // 📌 For filtered results
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // 📅 Date Filter States
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isFilterActive, setIsFilterActive] = useState(false);
 
   useEffect(() => {
     loadDiaries();
   }, []);
 
-  // ✅ Reload when screen comes into focus
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       loadDiaries();
@@ -36,10 +43,10 @@ const MyDiariesScreen = ({ navigation }) => {
 
   const loadDiaries = async () => {
     try {
-      // ✅ This endpoint returns ONLY the logged-in user's diaries (both public and private)
       const response = await getMyDiaries(0, 10);
       console.log("📝 My diaries loaded:", response.content?.length || 0);
       setDiaries(response.content || []);
+      setFilteredDiaries(response.content || []); // Set initial filtered data
     } catch (error) {
       console.error("Error loading my diaries:", error);
     } finally {
@@ -51,6 +58,61 @@ const MyDiariesScreen = ({ navigation }) => {
   const onRefresh = () => {
     setRefreshing(true);
     loadDiaries();
+  };
+
+  // 🎯 Filter diaries by selected date
+  const filterByDate = (date) => {
+    const filtered = diaries.filter((diary) => {
+      const diaryDate = new Date(diary.entryDate);
+      const filterDate = new Date(date);
+
+      // Compare only year, month, and day (ignore time)
+      return (
+        diaryDate.getFullYear() === filterDate.getFullYear() &&
+        diaryDate.getMonth() === filterDate.getMonth() &&
+        diaryDate.getDate() === filterDate.getDate()
+      );
+    });
+
+    setFilteredDiaries(filtered);
+    setIsFilterActive(true);
+    console.log(
+      `📅 Filtered ${filtered.length} diaries for ${formatDate(date)}`
+    );
+  };
+
+  // 🔄 Reset filter to show all diaries
+  const clearFilter = () => {
+    setSelectedDate(new Date());
+    setFilteredDiaries(diaries);
+    setIsFilterActive(false);
+  };
+
+  // ✅ Handle date selection
+  const onDateChange = (event, date) => {
+    // On Android, the picker closes automatically
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+
+    if (event.type === "set" && date) {
+      setSelectedDate(date);
+      // Apply filter immediately on Android
+      if (Platform.OS === "android") {
+        filterByDate(date);
+      }
+    }
+
+    // If user cancels on Android
+    if (event.type === "dismissed") {
+      setShowDatePicker(false);
+    }
+  };
+
+  // For iOS, we need a confirm button
+  const handleIOSConfirm = () => {
+    setShowDatePicker(false);
+    filterByDate(selectedDate);
   };
 
   const handleDelete = (id) => {
@@ -94,7 +156,6 @@ const MyDiariesScreen = ({ navigation }) => {
         {formatText(truncateText(item.goodThings, 1000))}
       </Text>
 
-      {/* ✅ Show bad things if they exist */}
       {item.badThings && (
         <View style={styles.challengesSection}>
           <Text style={styles.challengesLabel}>Challenges:</Text>
@@ -105,7 +166,6 @@ const MyDiariesScreen = ({ navigation }) => {
       )}
 
       <View style={styles.footer}>
-        {/* ✅ Visibility badge - shows PUBLIC or PRIVATE */}
         <View
           style={[
             styles.badge,
@@ -133,19 +193,75 @@ const MyDiariesScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* ✅ Header showing current view */}
+      {/* ✅ Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Ionicons name="person" size={20} color={COLORS.primary} />
-          <Text style={styles.headerText}>My Personal Diaries</Text>
+          <View style={styles.filterContainer}>
+            <TouchableOpacity
+              style={styles.dateButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={20}
+                color={COLORS.primary}
+              />
+              <Text style={styles.dateButtonText}>
+                {isFilterActive ? formatDate(selectedDate) : "Filter by Date"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Show Clear button only when filter is active */}
+            {isFilterActive && (
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={clearFilter}
+              >
+                <Ionicons name="close-circle" size={20} color={COLORS.error} />
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         <Text style={styles.headerSubtext}>
-          {diaries.length} {diaries.length === 1 ? "entry" : "entries"}
+          {filteredDiaries.length}{" "}
+          {filteredDiaries.length === 1 ? "entry" : "entries"}
+          {isFilterActive && " (filtered)"}
         </Text>
       </View>
 
+      {/* 📅 Beautiful Date Filter Section */}
+
+      {/* 🎨 Date Picker - Works on both iOS and Android */}
+      {showDatePicker && (
+        <View style={styles.datePickerContainer}>
+          {Platform.OS === "ios" && (
+            <View style={styles.iosPickerHeader}>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.iosButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.iosHeaderTitle}>Select Date</Text>
+              <TouchableOpacity onPress={handleIOSConfirm}>
+                <Text style={[styles.iosButtonText, styles.iosConfirmText]}>
+                  Done
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={onDateChange}
+            maximumDate={new Date()}
+            style={styles.datePicker}
+          />
+        </View>
+      )}
+
       <FlatList
-        data={diaries}
+        data={filteredDiaries}
         renderItem={renderDiary}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
@@ -155,8 +271,12 @@ const MyDiariesScreen = ({ navigation }) => {
         ListEmptyComponent={
           <EmptyState
             icon="book-outline"
-            title="No Diaries Yet"
-            message="Start journaling to track your mood and thoughts!"
+            title={isFilterActive ? "No Diaries Found" : "No Diaries Yet"}
+            message={
+              isFilterActive
+                ? "No diaries found for the selected date"
+                : "Start journaling to track your mood and thoughts!"
+            }
           />
         }
       />
@@ -170,7 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    padding: 16,
+    padding: 5,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -178,7 +298,7 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    // marginBottom: 4,
   },
   headerText: {
     marginLeft: 8,
@@ -191,6 +311,91 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     marginLeft: 28,
   },
+
+  // 🎨 Date Filter Styles
+  filterContainer: {
+    flexDirection: "row",
+    padding: 16,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    gap: 12,
+  },
+  dateButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primary + "10",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.primary + "30",
+  },
+  dateButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  clearButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.error + "10",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.error + "30",
+  },
+  clearButtonText: {
+    marginLeft: 4,
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.error,
+  },
+
+  // 🎨 Date Picker Styles
+  datePickerContainer: {
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    ...Platform.select({
+      ios: {
+        paddingBottom: 10,
+      },
+    }),
+  },
+  iosPickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  iosHeaderTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  iosButtonText: {
+    fontSize: 16,
+    color: COLORS.primary,
+  },
+  iosConfirmText: {
+    fontWeight: "600",
+  },
+  datePicker: {
+    width: "100%",
+    ...Platform.select({
+      ios: {
+        height: 200,
+      },
+    }),
+  },
+
   list: {
     padding: 16,
   },

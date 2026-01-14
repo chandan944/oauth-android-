@@ -83,9 +83,7 @@ const MessagesScreen = ({ navigation }) => {
       }
     >
       <View style={styles.messageHeader}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="megaphone" size={24} color={COLORS.primary} />
-        </View>
+        
         <View style={styles.headerInfo}>
           <Text style={styles.title}>
             {formatText(truncateText(item.title, 100))}

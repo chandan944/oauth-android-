@@ -7,6 +7,7 @@ import {
   Alert,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { LineChart } from "react-native-chart-kit";
@@ -21,7 +22,8 @@ import Card from "../../components/common/Card";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
 import { formatDate } from "../../utils/helpers";
-import { Dimensions } from "react-native";
+
+const { width } = Dimensions.get("window");
 
 const HabitDetailScreen = ({ route, navigation }) => {
   const { habitId } = route.params;
@@ -36,26 +38,24 @@ const HabitDetailScreen = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
-    
-      navigation.setOptions({
-        headerRight: () => (
-          <View style={styles.headerButtons}>
-            <TouchableOpacity
-              onPress={handleEditHabit}
-              style={styles.headerButton}
-            >
-              <Ionicons name="eyedrop" size={24} color={COLORS.success} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleDeleteHabit}
-              style={styles.headerButton}
-            >
-              <Ionicons name="trash-outline" size={24} color={COLORS.error} />
-            </TouchableOpacity>
-          </View>
-        ),
-      });
-    
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            onPress={handleEditHabit}
+            style={styles.headerButton}
+          >
+            <Ionicons name="eyedrop" size={22} color={COLORS.success} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleDeleteHabit}
+            style={styles.headerButton}
+          >
+            <Ionicons name="trash-outline" size={22} color={COLORS.error} />
+          </TouchableOpacity>
+        </View>
+      ),
+    });
   }, [navigation]);
 
   const loadHabitData = async () => {
@@ -131,18 +131,32 @@ const HabitDetailScreen = ({ route, navigation }) => {
   if (loading) return <LoadingSpinner />;
   if (!habit) return null;
 
-  // Prepare chart data
+  const completionRate = logs.length > 0
+    ? Math.round((logs.filter(l => l.status === "completed").length / logs.length) * 100)
+    : 0;
+
+  // Prepare chart data with proper date formatting
+  const getShortDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    return `${day} ${month.slice(0, 3)}`;
+  };
+
   const chartData = {
     labels: logs
       .slice(0, 7)
       .reverse()
-      .map((log) => formatDate(log.date).slice(0, 5)),
+      .map((log) => getShortDate(log.date)),
     datasets: [
       {
-        data: logs
-          .slice(0, 7)
-          .reverse()
-          .map((log) => (log.status === "completed" ? 1 : 0)),
+        data: logs.length > 0 
+          ? logs
+              .slice(0, 7)
+              .reverse()
+              .map((log) => (log.status === "completed" ? 1 : 0))
+          : [0], // Fallback to prevent chart errors
+        strokeWidth: 3,
       },
     ],
   };
@@ -154,100 +168,148 @@ const HabitDetailScreen = ({ route, navigation }) => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <Card style={styles.header}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="balloon-sharp" size={48} color={COLORS.error} />
-        </View>
-        <Text style={styles.title}>{habit.title}</Text>
-        <Text style={styles.target}>Target: {habit.targetValue}</Text>
-
-        <View style={styles.statRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{habit.bestStreak}</Text>
-            <Text style={styles.statLabel}>Best Streak 🔥</Text>
+      {/* Hero Card */}
+      <View style={styles.heroCard}>
+        <View style={styles.heroGradient}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="flash" size={32} color="#fff" />
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{logs.length}</Text>
-            <Text style={styles.statLabel}>Total Logs</Text>
+          <Text style={styles.heroTitle}>{habit.title}</Text>
+          <Text style={styles.heroSubtitle}>Target: {habit.targetValue}</Text>
+          
+          <View style={styles.streakBadge}>
+            <Text style={styles.streakNumber}>{habit.bestStreak || 0}</Text>
+            <Text style={styles.streakLabel}>Day Streak 🔥</Text>
           </View>
         </View>
-      </Card>
+      </View>
 
-      <Card>
+      {/* Stats Grid */}
+      <View style={styles.statsGrid}>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBg, { backgroundColor: '#E8F5E9' }]}>
+            <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+          </View>
+          <Text style={styles.statValue}>{completionRate}%</Text>
+          <Text style={styles.statLabel}>Completion</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBg, { backgroundColor: '#E3F2FD' }]}>
+            <Ionicons name="calendar" size={24} color="#2196F3" />
+          </View>
+          <Text style={styles.statValue}>{logs.length}</Text>
+          <Text style={styles.statLabel}>Total Logs</Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBg, { backgroundColor: '#FFF3E0' }]}>
+            <Ionicons name="flame" size={24} color="#FF9800" />
+          </View>
+          <Text style={styles.statValue}>{habit.bestStreak || 0}</Text>
+          <Text style={styles.statLabel}>Best Streak</Text>
+        </View>
+      </View>
+
+      {/* Action Buttons */}
+      <Card style={styles.actionCard}>
         <Text style={styles.sectionTitle}>Log Today's Progress</Text>
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[styles.logButton, styles.completeButton]}
+            style={styles.completeButton}
             onPress={() => handleLogHabit("completed")}
             disabled={logging}
           >
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.white} />
-            <Text style={styles.logButtonText}>Completed</Text>
+            <View style={styles.buttonIconBg}>
+              <Ionicons name="checkmark" size={24} color="#4CAF50" />
+            </View>
+            <Text style={styles.buttonText}>Completed</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.logButton, styles.skipButton]}
+            style={styles.skipButton}
             onPress={() => handleLogHabit("skipped")}
             disabled={logging}
           >
-            <Ionicons name="close-circle" size={24} color={COLORS.white} />
-            <Text style={styles.logButtonText}>Skipped</Text>
+            <View style={styles.buttonIconBg}>
+              <Ionicons name="close" size={24} color="#9E9E9E" />
+            </View>
+            <Text style={styles.buttonText}>Skipped</Text>
           </TouchableOpacity>
         </View>
       </Card>
 
-      {logs.length > 0 && (
-        <Card>
-          <Text style={styles.sectionTitle}>Progress Chart (Last 7 Days)</Text>
+      {/* Progress Chart */}
+      {logs.length > 1 && (
+        <Card style={styles.chartCard}>
+          <Text style={styles.sectionTitle}>7-Day Progress</Text>
+          <Text style={styles.chartSubtitle}>
+            Track your consistency over the past week
+          </Text>
           <LineChart
             data={chartData}
-            width={Dimensions.get("window").width - 64}
+            width={width - 64}
             height={200}
             chartConfig={{
-              backgroundColor: COLORS.white,
-              backgroundGradientFrom: COLORS.primaryLight + "20",
-              backgroundGradientTo: COLORS.primary + "20",
+              backgroundColor: "#fff",
+              backgroundGradientFrom: "#fff",
+              backgroundGradientTo: "#f5f5f5",
               decimalPlaces: 0,
               color: (opacity = 1) => `rgba(108, 92, 231, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(100, 100, 100, ${opacity})`,
               style: { borderRadius: 16 },
               propsForDots: {
-                r: "6",
+                r: "5",
                 strokeWidth: "2",
-                stroke: COLORS.primary,
+                stroke: "#6C5CE7",
+                fill: "#fff"
               },
             }}
             bezier
             style={styles.chart}
+            withInnerLines={false}
+            withOuterLines={false}
+            withVerticalLines={false}
+            withHorizontalLines={false}
           />
         </Card>
       )}
 
-      <Card>
-        <Text style={styles.sectionTitle}>Recent Logs</Text>
-        {logs.slice(0, 5).map((log) => (
-          <View key={log.id} style={styles.logItem}>
-            <View style={styles.logDate}>
-              <Text style={styles.logDateText}>{formatDate(log.date)}</Text>
+      {/* Recent Logs */}
+      <Card style={styles.logsCard}>
+        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        {logs.slice(0, 5).map((log, index) => (
+          <View key={log.id} style={[
+            styles.logItem,
+            index === logs.slice(0, 5).length - 1 && styles.logItemLast
+          ]}>
+            <View style={styles.logLeft}>
+              <View style={[
+                styles.logDot,
+                log.status === "completed" ? styles.logDotSuccess : styles.logDotGrey
+              ]} />
+              <View>
+                <Text style={styles.logDate}>{formatDate(log.date)}</Text>
+                <Text style={styles.logTime}>
+                  {log.status === "completed" ? "Completed" : "Skipped"}
+                </Text>
+              </View>
             </View>
-            <View
-              style={[
-                styles.statusBadge,
-                log.status === "completed"
-                  ? styles.completedBadge
-                  : styles.skippedBadge,
-              ]}
-            >
+            <View style={[
+              styles.statusChip,
+              log.status === "completed" ? styles.statusChipSuccess : styles.statusChipGrey
+            ]}>
               <Ionicons
-                name={log.status === "completed" ? "checkmark" : "close"}
+                name={log.status === "completed" ? "checkmark-circle" : "close-circle"}
                 size={16}
-                color={COLORS.white}
+                color="#fff"
               />
-              <Text style={styles.statusText}>{log.status}</Text>
             </View>
           </View>
         ))}
       </Card>
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 };
@@ -255,7 +317,7 @@ const HabitDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: "#F8F9FA",
   },
   headerButtons: {
     flexDirection: "row",
@@ -263,121 +325,212 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
-    marginLeft: 8,
+    marginLeft: 4,
   },
-  header: {
+  heroCard: {
     margin: 16,
+    marginBottom: 8,
+    borderRadius: 24,
+    overflow: "hidden",
+    elevation: 4,
+    shadowColor: "#6C5CE7",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  heroGradient: {
+    backgroundColor: "#6C5CE7",
+    padding: 32,
     alignItems: "center",
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.success + "20",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(255,255,255,0.2)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: COLORS.text,
+  heroTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#fff",
     marginBottom: 8,
+    textAlign: "center",
   },
-  target: {
+  heroSubtitle: {
     fontSize: 16,
-    color: COLORS.textLight,
-    marginBottom: 16,
+    color: "rgba(255,255,255,0.9)",
+    marginBottom: 24,
   },
-  statRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  statBox: {
+  streakBadge: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
     alignItems: "center",
   },
+  streakNumber: {
+    fontSize: 36,
+    fontWeight: "900",
+    color: "#fff",
+  },
+  streakLabel: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.9)",
+    marginTop: 4,
+  },
+  statsGrid: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    gap: 12,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    alignItems: "center",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+  },
+  statIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   statValue: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: COLORS.primary,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#2D3436",
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 14,
-    color: COLORS.textLight,
-    marginTop: 4,
+    fontSize: 12,
+    color: "#636E72",
+    textAlign: "center",
+  },
+  actionCard: {
+    margin: 16,
+    marginTop: 0,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.text,
+    fontWeight: "700",
+    color: "#2D3436",
     marginBottom: 16,
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  logButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 14,
-    borderRadius: 12,
-    marginHorizontal: 4,
+    gap: 12,
   },
   completeButton: {
-    backgroundColor: COLORS.success,
+    flex: 1,
+    backgroundColor: "#E8F5E9",
+    borderRadius: 16,
+    padding: 16,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#4CAF50",
   },
   skipButton: {
-    backgroundColor: COLORS.grey,
+    flex: 1,
+    backgroundColor: "#F5F5F5",
+    borderRadius: 16,
+    padding: 16,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
   },
-  logButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.white,
+  buttonIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2D3436",
+  },
+  chartCard: {
+    margin: 16,
+    marginTop: 0,
+  },
+  chartSubtitle: {
+    fontSize: 13,
+    color: "#636E72",
+    marginBottom: 16,
+    marginTop: -8,
   },
   chart: {
     marginVertical: 8,
     borderRadius: 16,
   },
+  logsCard: {
+    margin: 16,
+    marginTop: 0,
+  },
   logItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: "#F0F0F0",
   },
-  logDate: {
-    flex: 1,
+  logItemLast: {
+    borderBottomWidth: 0,
   },
-  logDateText: {
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  statusBadge: {
+  logLeft: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    gap: 12,
   },
-  completedBadge: {
-    backgroundColor: COLORS.success,
+  logDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
-  skippedBadge: {
-    backgroundColor: COLORS.grey,
+  logDotSuccess: {
+    backgroundColor: "#4CAF50",
   },
-  statusText: {
-    marginLeft: 4,
-    fontSize: 12,
+  logDotGrey: {
+    backgroundColor: "#9E9E9E",
+  },
+  logDate: {
+    fontSize: 15,
     fontWeight: "600",
-    color: COLORS.white,
+    color: "#2D3436",
+  },
+  logTime: {
+    fontSize: 13,
+    color: "#636E72",
+    marginTop: 2,
+  },
+  statusChip: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statusChipSuccess: {
+    backgroundColor: "#4CAF50",
+  },
+  statusChipGrey: {
+    backgroundColor: "#9E9E9E",
   },
 });
 

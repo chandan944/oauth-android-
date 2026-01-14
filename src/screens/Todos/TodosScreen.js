@@ -1,5 +1,5 @@
 // src/screens/Todos/TodosScreen.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,20 @@ const TodosScreen = ({ navigation }) => {
   const [filter, setFilter] = useState("all"); // all, pending, completed
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Add Analytics button to header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => navigation.navigate("TodoAnalytics")}
+          style={{ marginRight: 15 }}
+        >
+          <Ionicons name="calendar-outline" size={24} color={COLORS.black} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   useEffect(() => {
     loadTodos();
@@ -275,12 +289,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   filterBtnActive: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.black,
   },
   filterBtnText: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.textLight,
+    color: COLORS.black,
   },
   filterBtnTextActive: {
     color: COLORS.white,

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  Animated,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../context/AuthContext";
@@ -31,6 +32,7 @@ const MessageDetailScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [focusedInput, setFocusedInput] = useState(false);
 
   const isAdmin = user?.role === "ADMIN";
 
@@ -128,28 +130,7 @@ const MessageDetailScreen = ({ route, navigation }) => {
     );
   };
 
-  useEffect(() => {
-    if (isAdmin) {
-      navigation.setOptions({
-        headerRight: () => (
-          <View style={styles.headerButtons}>
-            <TouchableOpacity
-              onPress={handleEditMessage}
-              style={styles.headerButton}
-            >
-              <Ionicons name="create-outline" size={24} color={COLORS.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleDeleteMessage}
-              style={styles.headerButton}
-            >
-              <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
-            </TouchableOpacity>
-          </View>
-        ),
-      });
-    }
-  }, [navigation, isAdmin]);
+  
 
   if (loading) return <LoadingSpinner />;
   if (!message) return null;
@@ -157,71 +138,117 @@ const MessageDetailScreen = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <ScrollView
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <Card style={styles.messageCard}>
-          <View style={styles.header}>
+        <View style={styles.messageCard}>
+          <View style={styles.messageHeader}>
             
             <View style={styles.headerInfo}>
               <Text style={styles.title}>
                 {formatText(truncateText(message.title, 1000))}
               </Text>
-              <Text style={styles.date}>{formatDate(message.createdAt)}</Text>
+              <View style={styles.dateContainer}>
+                <Ionicons name="time-outline" size={14} color={COLORS.grey} />
+                <Text style={styles.date}>{formatDate(message.createdAt)}</Text>
+              </View>
             </View>
           </View>
 
-          <Text style={styles.content}>
-            {formatText(truncateText(message.content, 1000))}
-          </Text>
-        </Card>
+          <View style={styles.contentContainer}>
+            <Text style={styles.content}>
+              {formatText(truncateText(message.content, 1000))}
+            </Text>
+          </View>
+        </View>
 
-        <Card>
-          <Text style={styles.sectionTitle}>
-            Comments ({message.commentCount})
-          </Text>
-
-          {message.comments.map((comment) => (
-            <View key={comment.id} style={styles.comment}>
-              <View style={styles.commentHeader}>
-                <Text style={styles.commentDate}>
-                  {formatTime(comment.createdAt)}
-                </Text>
-                
-                {isAdmin && (
-                  <TouchableOpacity
-                    onPress={() => handleDeleteComment(comment.id)}
-                    style={styles.deleteCommentButton}
-                  >
-                    <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Text style={styles.commentContent}>
-                {formatText(truncateText(comment.content, 1000))}
-              </Text>
+        <View style={styles.commentsSection}>
+          <View style={styles.commentsTitleContainer}>
+            <Ionicons name="chatbubbles" size={20} color={COLORS.primary || "#6C63FF"} />
+            <Text style={styles.sectionTitle}>
+              Comments
+            </Text>
+            <View style={styles.commentBadge}>
+              <Text style={styles.commentBadgeText}>{message.commentCount}</Text>
             </View>
-          ))}
-        </Card>
+          </View>
+
+          {message.comments.length === 0 ? (
+            <View style={styles.emptyComments}>
+              <Ionicons name="chatbubble-outline" size={48} color="#E0E0E0" />
+              <Text style={styles.emptyText}>No comments yet</Text>
+              <Text style={styles.emptySubtext}>Be the first to comment!</Text>
+            </View>
+          ) : (
+            message.comments.map((comment, index) => (
+              <View key={comment.id} style={styles.comment}>
+                
+                
+                <View style={styles.commentBody}>
+                  <View style={styles.commentHeader}>
+                    <View style={styles.commentTimeContainer}>
+                      <Ionicons name="time-outline" size={12} color={COLORS.grey} />
+                      <Text style={styles.commentDate}>
+                        {formatTime(comment.createdAt)}
+                      </Text>
+                    </View>
+                    
+                    {isAdmin && (
+                      <TouchableOpacity
+                        onPress={() => handleDeleteComment(comment.id)}
+                        style={styles.deleteCommentButton}
+                      >
+                        <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={styles.commentContent}>
+                    {formatText(truncateText(comment.content, 1000))}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      <View style={styles.commentInput}>
-        <TextInput
-          style={styles.input}
-          placeholder="Add a comment..."
-          value={comment}
-          onChangeText={setComment}
-          multiline
-          placeholderTextColor={COLORS.grey}
-        />
-        <TouchableOpacity
-          style={styles.sendButton}
-          onPress={handleAddComment}
-          disabled={submitting}
-        >
-          <Ionicons name="send" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
+      <View style={styles.commentInputWrapper}>
+        <View style={[
+          styles.commentInput,
+          focusedInput && styles.commentInputFocused
+        ]}>
+          <View style={styles.inputIconContainer}>
+            <Ionicons name="chatbox-outline" size={20} color={COLORS.primary || "#6C63FF"} />
+          </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Add a comment..."
+            value={comment}
+            onChangeText={setComment}
+            onFocus={() => setFocusedInput(true)}
+            onBlur={() => setFocusedInput(false)}
+            multiline
+            placeholderTextColor="#A0A0A0"
+          />
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!comment.trim() || submitting) && styles.sendButtonDisabled
+            ]}
+            onPress={handleAddComment}
+            disabled={submitting || !comment.trim()}
+          >
+            {submitting ? (
+              <Ionicons name="hourglass-outline" size={22} color="#FFFFFF" />
+            ) : (
+              <Ionicons name="send" size={22} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -230,61 +257,149 @@ const MessageDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: "#F5F7FA",
   },
   headerButtons: {
     flexDirection: "row",
     marginRight: 8,
+    gap: 8,
   },
   headerButton: {
-    padding: 8,
-    marginLeft: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editButton: {
+    backgroundColor: (COLORS.primary || "#6C63FF") + "15",
+  },
+  deleteButton: {
+    backgroundColor: COLORS.danger || "#FF6B6B",
   },
   messageCard: {
+    backgroundColor: "#FFFFFF",
     margin: 16,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  header: {
+  messageHeader: {
     flexDirection: "row",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   iconContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: COLORS.primaryLight + "20",
+    backgroundColor: (COLORS.primary || "#6C63FF") + "15",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
   },
   headerInfo: {
     flex: 1,
+    justifyContent: "center",
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: COLORS.text,
-    marginBottom: 4,
+    fontWeight: "700",
+    color: "#2C3E50",
+    marginBottom: 8,
+    lineHeight: 28,
+  },
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   date: {
-    fontSize: 12,
-    color: COLORS.grey,
+    fontSize: 13,
+    color: "#7F8C8D",
+  },
+  contentContainer: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
   },
   content: {
     fontSize: 16,
-    color: COLORS.text,
-    lineHeight: 24,
+    color: "#34495E",
+    lineHeight: 26,
+  },
+  commentsSection: {
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  commentsTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    gap: 8,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.text,
-    marginBottom: 16,
+    fontWeight: "700",
+    color: "#2C3E50",
+  },
+  commentBadge: {
+    backgroundColor: (COLORS.primary || "#6C63FF") + "15",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 4,
+  },
+  commentBadgeText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.primary || "#6C63FF",
+  },
+  emptyComments: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#7F8C8D",
+    marginTop: 12,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#A0A0A0",
+    marginTop: 4,
   },
   comment: {
+    flexDirection: "row",
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: "#F0F0F0",
+  },
+  commentIconWrapper: {
+    marginRight: 12,
+  },
+  commentIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: (COLORS.primary || "#6C63FF") + "15",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  commentBody: {
+    flex: 1,
   },
   commentHeader: {
     flexDirection: "row",
@@ -292,37 +407,81 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
+  commentTimeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
   commentDate: {
     fontSize: 12,
-    color: COLORS.grey,
+    color: "#7F8C8D",
   },
   deleteCommentButton: {
     padding: 4,
+    borderRadius: 8,
   },
   commentContent: {
     fontSize: 14,
-    color: COLORS.textLight,
-    lineHeight: 20,
+    color: "#34495E",
+    lineHeight: 22,
+  },
+  commentInputWrapper: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E8E8E8",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 8,
   },
   commentInput: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: "#E8E8E8",
+  },
+  commentInputFocused: {
+    borderColor: COLORS.primary || "#6C63FF",
+    backgroundColor: "#FFFFFF",
+  },
+  inputIconContainer: {
+    marginRight: 8,
   },
   input: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    padding: 12,
-    borderRadius: 24,
-    fontSize: 14,
+    fontSize: 15,
+    color: "#2C3E50",
+    paddingVertical: 12,
     maxHeight: 100,
   },
   sendButton: {
-    marginLeft: 12,
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary || "#6C63FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+    shadowColor: COLORS.primary || "#6C63FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  sendButtonDisabled: {
+    backgroundColor: "#D0D0D0",
+    shadowOpacity: 0,
+    elevation: 0,
   },
 });
 

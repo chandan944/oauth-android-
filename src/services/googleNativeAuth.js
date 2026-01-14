@@ -4,7 +4,7 @@ import { GoogleAuthProvider, signInWithCredential } from '@react-native-firebase
 import api from './api';
 
 GoogleSignin.configure({
-  webClientId: '1036194311354-ccbr5d07s13jtpd2ffmhtdl6hdd43urq.apps.googleusercontent.com',
+  webClientId: '726369306394-nc6s5p1esot3cgnfh2ikmjpukbbppii5.apps.googleusercontent.com',
 });
 
 export const signInWithGoogleNative = async () => {
