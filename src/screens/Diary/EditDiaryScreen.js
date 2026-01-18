@@ -8,25 +8,28 @@ import {
   Alert,
   Switch,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { createDiary } from "../../services/diaryService";
+import { updateDiary } from "../../services/diaryService";
 import Button from "../../components/common/Button";
 import MoodSelector from "../../components/common/MoodSelector";
 import { COLORS } from "../../utils/colors";
 import { formatText } from "../../utils/formatText";
 
-const CreateDiaryScreen = ({ navigation, route }) => {
-  const [title, setTitle] = useState("");
-  const [goodThings, setGoodThings] = useState("");
-  const [badThings, setBadThings] = useState("");
-  const [mood, setMood] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
+const EditDiaryScreen = ({ navigation, route }) => {
+  const { diary } = route.params; // Get diary data from navigation params
+  
+  const [title, setTitle] = useState(diary.title || "");
+  const [goodThings, setGoodThings] = useState(diary.goodThings || "");
+  const [badThings, setBadThings] = useState(diary.badThings || "");
+  const [mood, setMood] = useState(diary.mood || "");
+  const [isPublic, setIsPublic] = useState(diary.visibility === "PUBLIC");
   const [loading, setLoading] = useState(false);
   const [showGoodPreview, setShowGoodPreview] = useState(false);
   const [showBadPreview, setShowBadPreview] = useState(false);
 
-  const handleSave = async () => {
+  const handleUpdate = async () => {
     // Validation
     if (!title.trim()) {
       Alert.alert("Error", "Please enter a title");
@@ -53,32 +56,23 @@ const CreateDiaryScreen = ({ navigation, route }) => {
         visibility: isPublic ? "PUBLIC" : "PRIVATE",
       };
 
-      await createDiary(diaryData);
+      await updateDiary(diary.id, diaryData);
 
-      Alert.alert("Success", "Diary created successfully! 📖", [
+      Alert.alert("Success", "Diary updated successfully! ✨", [
         {
           text: "OK",
           onPress: () => {
-            // Reset form
-            setTitle("");
-            setGoodThings("");
-            setBadThings("");
-            setMood("");
-            setIsPublic(true);
-            
-            // Pass refresh flag to trigger feed and my diaries refresh
-            navigation.navigate("DiaryFeed", { refresh: true });
+            navigation.goBack();
           },
         },
       ]);
     } catch (error) {
-      console.error("❌ Error saving diary:", error);
+      console.error("❌ Error updating diary:", error);
 
-      // Check if error is about daily limit
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        "Failed to save diary. Please try again.";
+        "Failed to update diary. Please try again.";
 
       Alert.alert("Error", errorMessage);
     } finally {
@@ -99,7 +93,6 @@ const CreateDiaryScreen = ({ navigation, route }) => {
         {/* Title Section */}
         <View style={styles.section}>
           <View style={styles.labelContainer}>
-            
             <Text style={styles.label}>Title</Text>
             <View style={styles.requiredBadge}>
               <Text style={styles.requiredText}>Required</Text>
@@ -292,14 +285,11 @@ const CreateDiaryScreen = ({ navigation, route }) => {
           />
         </View>
 
-        {/* Info Card */}
-        
-
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
           <Button
-            title="Save Diary Entry"
-            onPress={handleSave}
+            title="Update Diary Entry"
+            onPress={handleUpdate}
             loading={loading}
             style={styles.saveButton}
           />
@@ -491,21 +481,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#636E72",
   },
-  infoCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#E3F2FD",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    gap: 12,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 13,
-    color: "#2D3436",
-    lineHeight: 20,
-  },
   buttonContainer: {
     gap: 12,
   },
@@ -531,4 +506,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateDiaryScreen;
+export default EditDiaryScreen;

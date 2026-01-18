@@ -1,14 +1,46 @@
 // context/AuthContext.js
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { saveToken, saveUser, getToken, getUser, clearStorage } from '../utils/storage';
-import api from '../services/api';
+import React, { createContext, useState, useContext, useEffect } from "react";
+import {
+  saveToken,
+  saveUser,
+  getToken,
+  getUser,
+  clearStorage,
+} from "../utils/storage";
+import api from "../services/api";
 
 const AuthContext = createContext();
 
+const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+
+useEffect(() => {
+  checkOnboardingStatus();
+}, []);
+
+const checkOnboardingStatus = async () => {
+  try {
+    const completed = await AsyncStorage.getItem(ONBOARDING_KEY);
+    setOnboardingCompleted(completed === "true");
+  } catch (error) {
+    console.error("Error checking onboarding status:", error);
+  } finally {
+    setCheckingOnboarding(false);
+  }
+};
+
+const completeOnboarding = async () => {
+  try {
+    await AsyncStorage.setItem(ONBOARDING_KEY, "true");
+    setOnboardingCompleted(true);
+  } catch (error) {
+    console.error("Error saving onboarding status:", error);
+  }
+};
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 };
@@ -23,25 +55,25 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAuth = async () => {
-    console.log('🔍 Checking authentication status...');
+    console.log("🔍 Checking authentication status...");
     try {
       const token = await getToken();
       const userData = await getUser();
 
       if (token && userData) {
-        console.log('✅ User already authenticated:', userData.email);
-        
+        console.log("✅ User already authenticated:", userData.email);
+
         // ✅ Set token in API headers (interceptor will also add it, but this ensures it's there)
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
         setUser(userData);
         setIsAuthenticated(true);
       } else {
-        console.log('ℹ️ No existing authentication found');
+        console.log("ℹ️ No existing authentication found");
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('❌ Auth check failed:', error);
+      console.error("❌ Auth check failed:", error);
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
@@ -49,117 +81,123 @@ export const AuthProvider = ({ children }) => {
   };
 
   const handleGoogleAuth = async (authData) => {
-    console.log('🔐 Processing Google authentication...');
-    
+    console.log("🔐 Processing Google authentication...");
+
     if (!authData || !authData.email) {
-      console.error('❌ Invalid authData:', authData);
+      console.error("❌ Invalid authData:", authData);
       return {
         success: false,
-        message: 'Invalid authentication data'
+        message: "Invalid authentication data",
       };
     }
 
-    console.log('👤 User email:', authData.email);
+    console.log("👤 User email:", authData.email);
 
     try {
-      console.log('📤 Sending to backend:', api.defaults.baseURL + '/auth/google');
-      
-      const response = await api.post('/auth/google', {
+      console.log(
+        "📤 Sending to backend:",
+        api.defaults.baseURL + "/auth/google"
+      );
+
+      const response = await api.post("/auth/google", {
         idToken: authData.idToken,
         email: authData.email,
         name: authData.name,
         imageUrl: authData.imageUrl,
       });
 
-      console.log('📥 Backend response:', response.data);
+      console.log("📥 Backend response:", response.data);
 
       if (response.data && response.data.success && response.data.token) {
-        console.log('✅ JWT token received from backend');
-        
+        console.log("✅ JWT token received from backend");
+
         const backendUser = response.data.user;
         const token = response.data.token;
 
         // ✅ CRITICAL: Save token and WAIT for completion
         const tokenSaved = await saveToken(token);
-        
+
         if (!tokenSaved) {
-          console.error('❌ Failed to save token to storage');
-          return { success: false, message: 'Failed to save authentication' };
+          console.error("❌ Failed to save token to storage");
+          return { success: false, message: "Failed to save authentication" };
         }
-        
-        console.log('💾 Token saved and verified in storage');
+
+        console.log("💾 Token saved and verified in storage");
 
         // ✅ Set token in API headers immediately
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        console.log('🔑 Token set in API headers');
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        console.log("🔑 Token set in API headers");
 
         const userData = {
           id: backendUser.id,
           email: backendUser.email,
           name: backendUser.name,
-          imageUrl: backendUser.imageUrl || '',
-          role: backendUser.role || 'USER',
+          imageUrl: backendUser.imageUrl || "",
+          role: backendUser.role || "USER",
         };
 
         // ✅ Save user data and WAIT
         const userSaved = await saveUser(userData);
-        
+
         if (!userSaved) {
-          console.error('❌ Failed to save user data');
+          console.error("❌ Failed to save user data");
         } else {
-          console.log('💾 User data saved to storage');
+          console.log("💾 User data saved to storage");
         }
 
         // ✅ Update state AFTER everything is saved
         setUser(userData);
         setIsAuthenticated(true);
 
-        console.log('🎉 Authentication complete!');
-        
+        console.log("🎉 Authentication complete!");
+
         // ✅ Small delay to ensure all state updates propagate
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
         return { success: true };
       }
 
-      console.error('❌ No token in backend response');
-      return { success: false, message: 'No token received from backend' };
-      
+      console.error("❌ No token in backend response");
+      return { success: false, message: "No token received from backend" };
     } catch (error) {
-      console.error('❌ Google auth error:', error);
-      console.error('Error response:', error.response?.data);
-      
-      const errorMessage = error.response?.data?.message 
-        || error.message 
-        || 'Authentication failed';
-      
+      console.error("❌ Google auth error:", error);
+      console.error("Error response:", error.response?.data);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Authentication failed";
+
       return {
         success: false,
-        message: errorMessage
+        message: errorMessage,
       };
     }
   };
 
   const logout = async () => {
-    console.log('👋 Logging out...');
+    console.log("👋 Logging out...");
     try {
       // Clear storage
       await clearStorage();
-      
+
       // Remove auth header from API
-      delete api.defaults.headers.common['Authorization'];
-      
+      delete api.defaults.headers.common["Authorization"];
+
       // Update state
       setUser(null);
       setIsAuthenticated(false);
-      
-      console.log('✅ Logout successful');
+
+      console.log("✅ Logout successful");
     } catch (error) {
-      console.error('❌ Logout error:', error);
+      console.error("❌ Logout error:", error);
     }
   };
 
   const value = {
+    onboardingCompleted,
+    checkingOnboarding,
+    completeOnboarding,
     user,
     isLoading,
     isAuthenticated,

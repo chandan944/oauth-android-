@@ -1,4 +1,3 @@
-// screens/Diary/DiaryFeedScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -9,9 +8,10 @@ import {
   TouchableOpacity,
   Modal,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { getPublicDiaries } from "../../services/diaryService";
 import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
@@ -20,7 +20,7 @@ import { COLORS, MOOD_EMOJIS, MOOD_COLORS } from "../../utils/colors";
 import { formatDate, truncateText } from "../../utils/helpers";
 import { formatText } from "../../utils/formatText";
 
-const DiaryFeedScreen = ({ navigation }) => {
+const DiaryFeedScreen = ({ navigation, route }) => {
   const [diaries, setDiaries] = useState([]);
   const [filteredDiaries, setFilteredDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,9 +29,35 @@ const DiaryFeedScreen = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const PAGE_SIZE = 10;
+
   useEffect(() => {
-    loadDiaries();
+    loadDiaries(0, true);
   }, []);
+
+  // Listen for refresh from create diary screen
+  useEffect(() => {
+    if (route.params?.refresh) {
+      onRefresh();
+      // Clear the param
+      navigation.setParams({ refresh: undefined });
+    }
+  }, [route.params?.refresh]);
+
+  // Auto-refresh when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      // Always refresh when screen is focused
+      onRefresh();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -41,22 +67,69 @@ const DiaryFeedScreen = ({ navigation }) => {
     }
   }, [diaries, selectedDate]);
 
-  const loadDiaries = async () => {
+  const loadDiaries = async (page = 0, reset = false) => {
+    if (!hasMore && !reset) return;
+
     try {
-      const response = await getPublicDiaries(0, 50);
-      setDiaries(response.content || []);
+      if (page === 0) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const response = await getPublicDiaries(page, PAGE_SIZE);
+      
+      // Sort by entryDate and createdAt descending (newest first)
+      // This ensures newly created diaries appear first
+      const sortedDiaries = (response.content || []).sort((a, b) => {
+        // First compare by entry date
+        const dateComparison = new Date(b.entryDate) - new Date(a.entryDate);
+        
+        // If entry dates are the same, sort by creation time (if available)
+        if (dateComparison === 0 && a.createdAt && b.createdAt) {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+        
+        // If entry dates are the same but no createdAt, sort by ID (assuming higher ID = newer)
+        if (dateComparison === 0) {
+          return b.id - a.id;
+        }
+        
+        return dateComparison;
+      });
+
+      if (reset || page === 0) {
+        setDiaries(sortedDiaries);
+      } else {
+        setDiaries((prev) => [...prev, ...sortedDiaries]);
+      }
+
+      setCurrentPage(response.pageable?.pageNumber || page);
+      setTotalPages(response.totalPages || 0);
+      setHasMore(!response.last);
+
+      console.log("📱 Loaded page:", page, "Total pages:", response.totalPages);
     } catch (error) {
       console.error("Error loading diaries:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setIsLoadingMore(false);
     }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
     setSelectedDate(null);
-    loadDiaries();
+    setCurrentPage(0);
+    setHasMore(true);
+    loadDiaries(0, true);
+  };
+
+  const loadMoreDiaries = () => {
+    if (!isLoadingMore && hasMore && !selectedDate) {
+      loadDiaries(currentPage + 1);
+    }
   };
 
   const filterDiariesByDate = (date) => {
@@ -65,7 +138,7 @@ const DiaryFeedScreen = ({ navigation }) => {
       return;
     }
 
-    const filtered = diaries.filter(diary => {
+    const filtered = diaries.filter((diary) => {
       const diaryDate = new Date(diary.entryDate);
       return (
         diaryDate.getDate() === date.getDate() &&
@@ -73,23 +146,23 @@ const DiaryFeedScreen = ({ navigation }) => {
         diaryDate.getFullYear() === date.getFullYear()
       );
     });
-    
+
     setFilteredDiaries(filtered);
   };
 
   const handleDateSelect = (date) => {
     setSelectedDate(date);
     filterDiariesByDate(date);
-    
-    if (Platform.OS === 'ios') {
+
+    if (Platform.OS === "ios") {
       setShowFilterModal(false);
     }
   };
 
   const handleAndroidDateChange = (event, date) => {
     setShowDatePicker(false);
-    
-    if (event.type === 'set' && date) {
+
+    if (event.type === "set" && date) {
       setSelectedDate(date);
       filterDiariesByDate(date);
     }
@@ -101,11 +174,22 @@ const DiaryFeedScreen = ({ navigation }) => {
     setShowFilterModal(false);
   };
 
+  const renderFooter = () => {
+    if (!isLoadingMore) return null;
+
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+        <Text style={styles.footerText}>Loading more diaries...</Text>
+      </View>
+    );
+  };
+
   const renderDiary = ({ item }) => (
     <Card>
       <View style={styles.diaryHeader}>
         <View style={styles.authorInfo}>
-          <View>
+          <View style={styles.authorTextContainer}>
             <Text style={styles.authorName}>{item.authorName}</Text>
             <Text style={styles.date}>{formatDate(item.entryDate)}</Text>
           </View>
@@ -123,21 +207,21 @@ const DiaryFeedScreen = ({ navigation }) => {
 
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.content}>
-        {formatText(truncateText(item.goodThings, 1000))}
+        {formatText(truncateText(item.goodThings, 3000))}
       </Text>
 
       {item.badThings && (
         <View style={styles.challengesSection}>
           <Text style={styles.challengesLabel}>Challenges:</Text>
           <Text style={styles.challengesText}>
-            {formatText(truncateText(item.badThings, 1000))}
+            {formatText(truncateText(item.badThings, 3000))}
           </Text>
         </View>
       )}
     </Card>
   );
 
-  if (loading) return <LoadingSpinner />;
+  if (loading && currentPage === 0) return <LoadingSpinner />;
 
   return (
     <View style={styles.container}>
@@ -149,26 +233,28 @@ const DiaryFeedScreen = ({ navigation }) => {
           <Ionicons name="book" size={20} color={COLORS.black} />
           <Text style={styles.myDiariesText}>My Diaries</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => {
-            if (Platform.OS === 'ios') {
+            if (Platform.OS === "ios") {
               setShowFilterModal(true);
             } else {
               setShowDatePicker(true);
             }
           }}
         >
-          <Ionicons 
-            name={selectedDate ? "filter" : "filter-outline"} 
-            size={20} 
-            color={selectedDate ? COLORS.primary : COLORS.black} 
+          <Ionicons
+            name={selectedDate ? "filter" : "filter-outline"}
+            size={20}
+            color={selectedDate ? COLORS.primary : COLORS.black}
           />
-          <Text style={[
-            styles.filterText,
-            selectedDate && styles.filterTextActive
-          ]}>
+          <Text
+            style={[
+              styles.filterText,
+              selectedDate && styles.filterTextActive,
+            ]}
+          >
             Filter
           </Text>
           {selectedDate && (
@@ -189,11 +275,12 @@ const DiaryFeedScreen = ({ navigation }) => {
       {selectedDate && (
         <View style={styles.filterInfo}>
           <Text style={styles.filterInfoText}>
-            Showing diaries from {selectedDate.toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
+            Showing diaries from{" "}
+            {selectedDate.toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
             })}
           </Text>
           <TouchableOpacity onPress={clearFilter}>
@@ -202,7 +289,7 @@ const DiaryFeedScreen = ({ navigation }) => {
         </View>
       )}
 
-      {showFilterModal && Platform.OS === 'ios' && (
+      {showFilterModal && Platform.OS === "ios" && (
         <Modal
           animationType="slide"
           transparent={true}
@@ -217,7 +304,7 @@ const DiaryFeedScreen = ({ navigation }) => {
                   <Ionicons name="close" size={24} color={COLORS.text} />
                 </TouchableOpacity>
               </View>
-              
+
               <DateTimePicker
                 value={selectedDate || new Date()}
                 mode="date"
@@ -230,16 +317,16 @@ const DiaryFeedScreen = ({ navigation }) => {
                 maximumDate={new Date()}
                 style={styles.datePicker}
               />
-              
+
               <View style={styles.modalButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.clearButton}
                   onPress={clearFilter}
                 >
                   <Text style={styles.clearButtonText}>Clear Filter</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.applyButton}
                   onPress={() => setShowFilterModal(false)}
                 >
@@ -251,7 +338,7 @@ const DiaryFeedScreen = ({ navigation }) => {
         </Modal>
       )}
 
-      {showDatePicker && Platform.OS === 'android' && (
+      {showDatePicker && Platform.OS === "android" && (
         <DateTimePicker
           value={selectedDate || new Date()}
           mode="date"
@@ -267,16 +354,25 @@ const DiaryFeedScreen = ({ navigation }) => {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={[
           styles.list,
-          filteredDiaries.length === 0 && styles.emptyList
+          filteredDiaries.length === 0 && styles.emptyList,
         ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        onEndReached={loadMoreDiaries}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
         ListEmptyComponent={
           <EmptyState
             icon="calendar-outline"
-            title={selectedDate ? "No Diaries on This Date" : "No Public Diaries"}
-            message={selectedDate ? "Try another date or clear the filter" : "Be the first to share your thoughts!"}
+            title={
+              selectedDate ? "No Diaries on This Date" : "No Public Diaries"
+            }
+            message={
+              selectedDate
+                ? "Try another date or clear the filter"
+                : "Be the first to share your thoughts!"
+            }
           />
         }
       />
@@ -325,7 +421,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     marginRight: 12,
-    position: 'relative',
+    position: "relative",
   },
   filterText: {
     marginLeft: 6,
@@ -337,20 +433,20 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   filterBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -4,
     backgroundColor: COLORS.primary,
     borderRadius: 8,
     width: 16,
     height: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   filterBadgeText: {
     color: COLORS.white,
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   addButton: {
     width: 48,
@@ -366,9 +462,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   filterInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: COLORS.primaryLight + "10",
@@ -378,6 +474,7 @@ const styles = StyleSheet.create({
   filterInfoText: {
     fontSize: 14,
     color: COLORS.text,
+    flex: 1,
   },
   list: {
     padding: 16,
@@ -394,11 +491,16 @@ const styles = StyleSheet.create({
   authorInfo: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
+  },
+  authorTextContainer: {
+    flex: 1,
   },
   authorName: {
     fontSize: 14,
     fontWeight: "600",
     color: COLORS.text,
+    marginBottom: 2,
   },
   date: {
     fontSize: 12,
@@ -410,6 +512,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
+    marginLeft: 12,
   },
   moodEmoji: {
     fontSize: 24,
@@ -445,27 +548,37 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 18,
   },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: COLORS.textLight,
+  },
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: '70%',
+    maxHeight: "70%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.text,
   },
   datePicker: {
@@ -473,8 +586,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   clearButton: {
     paddingVertical: 12,
@@ -486,7 +599,7 @@ const styles = StyleSheet.create({
   },
   clearButtonText: {
     color: COLORS.text,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   applyButton: {
     paddingVertical: 12,
@@ -496,7 +609,7 @@ const styles = StyleSheet.create({
   },
   applyButtonText: {
     color: COLORS.white,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

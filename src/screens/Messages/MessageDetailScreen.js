@@ -34,6 +34,7 @@ const MessageDetailScreen = ({ route, navigation }) => {
   const [submitting, setSubmitting] = useState(false);
   const [focusedInput, setFocusedInput] = useState(false);
 
+  const MAX_COMMENT_LENGTH = 450;
   const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
@@ -61,6 +62,11 @@ const MessageDetailScreen = ({ route, navigation }) => {
   const handleAddComment = async () => {
     if (!comment.trim()) {
       Alert.alert("Error", "Please enter a comment");
+      return;
+    }
+
+    if (comment.length > MAX_COMMENT_LENGTH) {
+      Alert.alert("Error", `Comment must be ${MAX_COMMENT_LENGTH} characters or less`);
       return;
     }
 
@@ -130,8 +136,6 @@ const MessageDetailScreen = ({ route, navigation }) => {
     );
   };
 
-  
-
   if (loading) return <LoadingSpinner />;
   if (!message) return null;
 
@@ -145,7 +149,6 @@ const MessageDetailScreen = ({ route, navigation }) => {
       >
         <View style={styles.messageCard}>
           <View style={styles.messageHeader}>
-            
             <View style={styles.headerInfo}>
               <Text style={styles.title}>
                 {formatText(truncateText(message.title, 1000))}
@@ -159,7 +162,7 @@ const MessageDetailScreen = ({ route, navigation }) => {
 
           <View style={styles.contentContainer}>
             <Text style={styles.content}>
-              {formatText(truncateText(message.content, 1000))}
+              {formatText(truncateText(message.content, 2000))}
             </Text>
           </View>
         </View>
@@ -182,34 +185,34 @@ const MessageDetailScreen = ({ route, navigation }) => {
               <Text style={styles.emptySubtext}>Be the first to comment!</Text>
             </View>
           ) : (
-            message.comments.map((comment, index) => (
-              <View key={comment.id} style={styles.comment}>
-                
-                
-                <View style={styles.commentBody}>
-                  <View style={styles.commentHeader}>
-                    <View style={styles.commentTimeContainer}>
-                      <Ionicons name="time-outline" size={12} color={COLORS.grey} />
-                      <Text style={styles.commentDate}>
-                        {formatTime(comment.createdAt)}
-                      </Text>
+            [...message.comments]
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+              .map((comment, index) => (
+                <View key={comment.id} style={styles.comment}>
+                  <View style={styles.commentBody}>
+                    <View style={styles.commentHeader}>
+                      <View style={styles.commentTimeContainer}>
+                        <Ionicons name="time-outline" size={12} color={COLORS.grey} />
+                        <Text style={styles.commentDate}>
+                          {formatDate(comment.createdAt)}
+                        </Text>
+                      </View>
+                      
+                      {isAdmin && (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteComment(comment.id)}
+                          style={styles.deleteCommentButton}
+                        >
+                          <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                        </TouchableOpacity>
+                      )}
                     </View>
-                    
-                    {isAdmin && (
-                      <TouchableOpacity
-                        onPress={() => handleDeleteComment(comment.id)}
-                        style={styles.deleteCommentButton}
-                      >
-                        <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
-                      </TouchableOpacity>
-                    )}
+                    <Text style={styles.commentContent}>
+                      {formatText(truncateText(comment.content, 1000))}
+                    </Text>
                   </View>
-                  <Text style={styles.commentContent}>
-                    {formatText(truncateText(comment.content, 1000))}
-                  </Text>
                 </View>
-              </View>
-            ))
+              ))
           )}
         </View>
 
@@ -228,12 +231,26 @@ const MessageDetailScreen = ({ route, navigation }) => {
             style={styles.input}
             placeholder="Add a comment..."
             value={comment}
-            onChangeText={setComment}
+            onChangeText={(text) => {
+              if (text.length <= MAX_COMMENT_LENGTH) {
+                setComment(text);
+              }
+            }}
             onFocus={() => setFocusedInput(true)}
             onBlur={() => setFocusedInput(false)}
             multiline
+            maxLength={MAX_COMMENT_LENGTH}
             placeholderTextColor="#A0A0A0"
           />
+          {comment.length > 0 && (
+            <Text style={[
+              styles.charCount,
+              comment.length > MAX_COMMENT_LENGTH * 0.9 && styles.charCountWarning,
+              comment.length === MAX_COMMENT_LENGTH && styles.charCountMax
+            ]}>
+              {comment.length}/{MAX_COMMENT_LENGTH}
+            </Text>
+          )}
           <TouchableOpacity
             style={[
               styles.sendButton,
@@ -482,6 +499,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#D0D0D0",
     shadowOpacity: 0,
     elevation: 0,
+  },
+  charCount: {
+    fontSize: 11,
+    color: "#7F8C8D",
+    marginRight: 8,
+  },
+  charCountWarning: {
+    color: "#F39C12",
+  },
+  charCountMax: {
+    color: COLORS.danger || "#FF6B6B",
+    fontWeight: "600",
   },
 });
 

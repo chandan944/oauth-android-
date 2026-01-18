@@ -33,7 +33,7 @@ const CreateMessageScreen = ({ navigation }) => {
       Alert.alert("Error", "Title must be less than 200 characters");
       return;
     }
-    if (content.length > 1000) {
+    if (content.length > 5000) {
       Alert.alert("Error", "Content must be less than 1000 characters");
       return;
     }
@@ -84,10 +84,10 @@ const CreateMessageScreen = ({ navigation }) => {
             onChangeText={setContent}
             multiline
             numberOfLines={8}
-            maxLength={1000}
+            maxLength={5000}
             placeholderTextColor={COLORS.grey}
           />
-          <Text style={styles.charCount}>{content.length}/1000</Text>
+          <Text style={styles.charCount}>{content.length}/5000</Text>
 
           <View style={styles.buttonContainer}>
             <Button

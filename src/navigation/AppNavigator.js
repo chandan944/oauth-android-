@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -6,6 +6,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../utils/colors";
 import { ActivityIndicator, View } from "react-native";
+import { isOnboardingComplete } from "../utils/storage";
+
+// Onboarding Screen
+import OnboardingScreen from "../screens/Onboarding/OnboardingScreen";
 
 // Auth Screens
 import LoginScreen from "../screens/Auth/LoginScreen";
@@ -52,6 +56,7 @@ const Tab = createBottomTabNavigator();
 
 const AuthStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Onboarding" component={OnboardingScreen} />
     <Stack.Screen name="Login" component={LoginScreen} />
   </Stack.Navigator>
 );
@@ -358,8 +363,26 @@ const MainTabs = () => (
 
 const AppNavigator = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const [onboardingDone, setOnboardingDone] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
-  if (isLoading) {
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, []);
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const completed = await isOnboardingComplete();
+      setOnboardingDone(completed);
+    } catch (error) {
+      console.error("Error checking onboarding:", error);
+      setOnboardingDone(false);
+    } finally {
+      setCheckingOnboarding(false);
+    }
+  };
+
+  if (isLoading || checkingOnboarding) {
     return (
       <View
         style={{

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -21,52 +22,100 @@ import { formatText } from "../../utils/formatText";
 
 const MyDiariesScreen = ({ navigation }) => {
   const [diaries, setDiaries] = useState([]);
-  const [filteredDiaries, setFilteredDiaries] = useState([]); // 📌 For filtered results
+  const [filteredDiaries, setFilteredDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // 📅 Date Filter States
+  // Date Filter States
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isFilterActive, setIsFilterActive] = useState(false);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const PAGE_SIZE = 10;
+
   useEffect(() => {
-    loadDiaries();
+    loadDiaries(0, true);
   }, []);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      loadDiaries();
+      onRefresh();
     });
     return unsubscribe;
   }, [navigation]);
 
-  const loadDiaries = async () => {
+  useEffect(() => {
+    if (isFilterActive) {
+      filterByDate(selectedDate);
+    } else {
+      setFilteredDiaries(diaries);
+    }
+  }, [diaries, isFilterActive, selectedDate]);
+
+  const loadDiaries = async (page = 0, reset = false) => {
+    if (!hasMore && !reset) return;
+
     try {
-      const response = await getMyDiaries(0, 10);
-      console.log("📝 My diaries loaded:", response.content?.length || 0);
-      setDiaries(response.content || []);
-      setFilteredDiaries(response.content || []); // Set initial filtered data
+      if (page === 0) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const response = await getMyDiaries(page, PAGE_SIZE);
+      
+      // Sort by date descending (newest first)
+      const sortedDiaries = (response.content || []).sort((a, b) => {
+        return new Date(b.entryDate) - new Date(a.entryDate);
+      });
+
+      if (reset || page === 0) {
+        setDiaries(sortedDiaries);
+        setFilteredDiaries(sortedDiaries);
+      } else {
+        setDiaries((prev) => [...prev, ...sortedDiaries]);
+      }
+
+      setCurrentPage(response.pageable?.pageNumber || page);
+      setTotalPages(response.totalPages || 0);
+      setHasMore(!response.last);
+
+      console.log("📝 My diaries loaded - Page:", page, "Total:", sortedDiaries.length);
     } catch (error) {
       console.error("Error loading my diaries:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setIsLoadingMore(false);
     }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadDiaries();
+    setCurrentPage(0);
+    setHasMore(true);
+    setIsFilterActive(false);
+    setSelectedDate(new Date());
+    loadDiaries(0, true);
   };
 
-  // 🎯 Filter diaries by selected date
+  const loadMoreDiaries = () => {
+    if (!isLoadingMore && hasMore && !isFilterActive) {
+      loadDiaries(currentPage + 1);
+    }
+  };
+
   const filterByDate = (date) => {
     const filtered = diaries.filter((diary) => {
       const diaryDate = new Date(diary.entryDate);
       const filterDate = new Date(date);
 
-      // Compare only year, month, and day (ignore time)
       return (
         diaryDate.getFullYear() === filterDate.getFullYear() &&
         diaryDate.getMonth() === filterDate.getMonth() &&
@@ -76,44 +125,41 @@ const MyDiariesScreen = ({ navigation }) => {
 
     setFilteredDiaries(filtered);
     setIsFilterActive(true);
-    console.log(
-      `📅 Filtered ${filtered.length} diaries for ${formatDate(date)}`
-    );
+    console.log(`📅 Filtered ${filtered.length} diaries for ${formatDate(date)}`);
   };
 
-  // 🔄 Reset filter to show all diaries
   const clearFilter = () => {
     setSelectedDate(new Date());
     setFilteredDiaries(diaries);
     setIsFilterActive(false);
   };
 
-  // ✅ Handle date selection
   const onDateChange = (event, date) => {
-    // On Android, the picker closes automatically
     if (Platform.OS === "android") {
       setShowDatePicker(false);
     }
 
     if (event.type === "set" && date) {
       setSelectedDate(date);
-      // Apply filter immediately on Android
       if (Platform.OS === "android") {
         filterByDate(date);
       }
     }
 
-    // If user cancels on Android
     if (event.type === "dismissed") {
       setShowDatePicker(false);
     }
   };
 
-  // For iOS, we need a confirm button
   const handleIOSConfirm = () => {
     setShowDatePicker(false);
     filterByDate(selectedDate);
   };
+
+  // Replace the renderDiary function in MyDiariesScreen.js with this updated version:
+
+
+
 
   const handleDelete = (id) => {
     Alert.alert("Delete Diary", "Are you sure you want to delete this diary?", [
@@ -124,7 +170,7 @@ const MyDiariesScreen = ({ navigation }) => {
         onPress: async () => {
           try {
             await deleteDiary(id);
-            loadDiaries();
+            onRefresh();
             Alert.alert("Success", "Diary deleted successfully");
           } catch (error) {
             Alert.alert("Error", "Failed to delete diary");
@@ -134,66 +180,91 @@ const MyDiariesScreen = ({ navigation }) => {
     ]);
   };
 
-  const renderDiary = ({ item }) => (
-    <Card>
-      <View style={styles.diaryHeader}>
-        <View
-          style={[
-            styles.moodBadge,
-            { backgroundColor: MOOD_COLORS[item.mood] + "20" },
-          ]}
+  const renderFooter = () => {
+    if (!isLoadingMore) return null;
+
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+        <Text style={styles.footerText}>Loading more diaries...</Text>
+      </View>
+    );
+  };
+
+const renderDiary = ({ item }) => (
+  <Card>
+    <View style={styles.diaryHeader}>
+      <View
+        style={[
+          styles.moodBadge,
+          { backgroundColor: MOOD_COLORS[item.mood] + "20" },
+        ]}
+      >
+        <Text style={styles.moodEmoji}>{MOOD_EMOJIS[item.mood]}</Text>
+      </View>
+      <Text style={styles.date}>{formatDate(item.entryDate)}</Text>
+      
+      {/* Action buttons container */}
+      <View style={styles.actionButtons}>
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('EditDiary', { diary: item })}
+          style={styles.iconButton}
         >
-          <Text style={styles.moodEmoji}>{MOOD_EMOJIS[item.mood]}</Text>
-        </View>
-        <Text style={styles.date}>{formatDate(item.entryDate)}</Text>
-        <TouchableOpacity onPress={() => handleDelete(item.id)}>
+          <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          onPress={() => handleDelete(item.id)}
+          style={styles.iconButton}
+        >
           <Ionicons name="trash-outline" size={20} color={COLORS.error} />
         </TouchableOpacity>
       </View>
+    </View>
 
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.content}>
-        {formatText(truncateText(item.goodThings, 1000))}
-      </Text>
+    <Text style={styles.title}>{item.title}</Text>
+    <Text style={styles.content}>
+      {formatText(truncateText(item.goodThings, 3000))}
+    </Text>
 
-      {item.badThings && (
-        <View style={styles.challengesSection}>
-          <Text style={styles.challengesLabel}>Challenges:</Text>
-          <Text style={styles.challengesText}>
-            {formatText(truncateText(item.badThings, 1000))}
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.footer}>
-        <View
-          style={[
-            styles.badge,
-            item.visibility === "PUBLIC"
-              ? styles.publicBadge
-              : styles.privateBadge,
-          ]}
-        >
-          <Ionicons
-            name={
-              item.visibility === "PUBLIC"
-                ? "globe-outline"
-                : "lock-closed-outline"
-            }
-            size={14}
-            color={COLORS.white}
-          />
-          <Text style={styles.badgeText}>{item.visibility}</Text>
-        </View>
+    {item.badThings && (
+      <View style={styles.challengesSection}>
+        <Text style={styles.challengesLabel}>Challenges:</Text>
+        <Text style={styles.challengesText}>
+          {formatText(truncateText(item.badThings, 3000))}
+        </Text>
       </View>
-    </Card>
-  );
+    )}
 
-  if (loading) return <LoadingSpinner />;
+    <View style={styles.footer}>
+      <View
+        style={[
+          styles.badge,
+          item.visibility === "PUBLIC"
+            ? styles.publicBadge
+            : styles.privateBadge,
+        ]}
+      >
+        <Ionicons
+          name={
+            item.visibility === "PUBLIC"
+              ? "globe-outline"
+              : "lock-closed-outline"
+          }
+          size={14}
+          color={COLORS.white}
+        />
+        <Text style={styles.badgeText}>{item.visibility}</Text>
+      </View>
+    </View>
+  </Card>
+);
+
+
+  if (loading && currentPage === 0) return <LoadingSpinner />;
 
   return (
     <View style={styles.container}>
-      {/* ✅ Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.filterContainer}>
@@ -211,7 +282,6 @@ const MyDiariesScreen = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
 
-            {/* Show Clear button only when filter is active */}
             {isFilterActive && (
               <TouchableOpacity
                 style={styles.clearButton}
@@ -223,16 +293,9 @@ const MyDiariesScreen = ({ navigation }) => {
             )}
           </View>
         </View>
-        <Text style={styles.headerSubtext}>
-          {filteredDiaries.length}{" "}
-          {filteredDiaries.length === 1 ? "entry" : "entries"}
-          {isFilterActive && " (filtered)"}
-        </Text>
+        
       </View>
 
-      {/* 📅 Beautiful Date Filter Section */}
-
-      {/* 🎨 Date Picker - Works on both iOS and Android */}
       {showDatePicker && (
         <View style={styles.datePickerContainer}>
           {Platform.OS === "ios" && (
@@ -268,6 +331,9 @@ const MyDiariesScreen = ({ navigation }) => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        onEndReached={loadMoreDiaries}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
         ListEmptyComponent={
           <EmptyState
             icon="book-outline"
@@ -298,21 +364,12 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    // marginBottom: 4,
-  },
-  headerText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
   },
   headerSubtext: {
     fontSize: 12,
     color: COLORS.textLight,
     marginLeft: 28,
   },
-
-  // 🎨 Date Filter Styles
   filterContainer: {
     flexDirection: "row",
     padding: 16,
@@ -332,6 +389,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.primary + "30",
   },
+  
   dateButtonText: {
     marginLeft: 8,
     fontSize: 14,
@@ -354,8 +412,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.error,
   },
-
-  // 🎨 Date Picker Styles
   datePickerContainer: {
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -395,7 +451,6 @@ const styles = StyleSheet.create({
       },
     }),
   },
-
   list: {
     padding: 16,
   },
@@ -475,6 +530,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.white,
   },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: COLORS.textLight,
+  },
+
 });
 
 export default MyDiariesScreen;

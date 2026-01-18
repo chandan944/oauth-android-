@@ -19,6 +19,7 @@ import {
 } from "@react-native-google-signin/google-signin";
 import { useAuth } from "../../context/AuthContext";
 import { COLORS } from "../../utils/colors";
+import { setOnboardingComplete } from "../../utils/storage";
 
 const { width, height } = Dimensions.get("window");
 
@@ -194,6 +195,9 @@ const LoginScreen = ({ navigation }) => {
   const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Mark onboarding as complete when user reaches login screen
+    setOnboardingComplete();
+
     GoogleSignin.configure({
       webClientId:
         "726369306394-nc6s5p1esot3cgnfh2ikmjpukbbppii5.apps.googleusercontent.com",
