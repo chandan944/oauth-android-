@@ -383,7 +383,7 @@ const LoginScreen = ({ navigation }) => {
           <Animated.View
             style={[
               styles.logoSection,
-              { transform: [{ scale: logoScale }, { rotate }] }
+             
             ]}
           >
             <View style={styles.logoContainer}>

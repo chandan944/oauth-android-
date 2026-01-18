@@ -57,7 +57,7 @@ const HabitDetailScreen = ({ route, navigation }) => {
       ),
     });
   }, [navigation]);
-
+console.log(logs)
   const loadHabitData = async () => {
     try {
       const [habitData, logsData] = await Promise.all([

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useAuth } from "../../context/AuthContext";
@@ -18,10 +20,9 @@ import {
   deleteMessage,
   deleteComment 
 } from "../../services/messageService";
-import Card from "../../components/common/Card";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
-import { formatDate, formatTime, truncateText } from "../../utils/helpers";
+import { formatDate, truncateText } from "../../utils/helpers";
 import { formatText } from "../../utils/formatText";
 
 const MessageDetailScreen = ({ route, navigation }) => {
@@ -32,7 +33,7 @@ const MessageDetailScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [focusedInput, setFocusedInput] = useState(false);
+  const scrollViewRef = useRef(null);
 
   const MAX_COMMENT_LENGTH = 450;
   const isAdmin = user?.role === "ADMIN";
@@ -75,6 +76,7 @@ const MessageDetailScreen = ({ route, navigation }) => {
       await addComment(messageId, comment);
       setComment("");
       loadMessage();
+      Keyboard.dismiss();
       Alert.alert("Success", "Comment added!");
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -108,10 +110,6 @@ const MessageDetailScreen = ({ route, navigation }) => {
     );
   };
 
-  const handleEditMessage = () => {
-    navigation.navigate("EditMessage", { messageId });
-  };
-
   const handleDeleteComment = (commentId) => {
     Alert.alert(
       "Delete Comment",
@@ -140,12 +138,18 @@ const MessageDetailScreen = ({ route, navigation }) => {
   if (!message) return null;
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
       <ScrollView
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.messageCard}>
           <View style={styles.messageHeader}>
@@ -166,13 +170,50 @@ const MessageDetailScreen = ({ route, navigation }) => {
             </Text>
           </View>
         </View>
-
+      <View style={styles.inputWrapper}>
+        <View style={styles.commentInputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Write a comment..."
+            placeholderTextColor="#A0A0A0"
+            value={comment}
+            onChangeText={(text) => {
+              if (text.length <= MAX_COMMENT_LENGTH) {
+                setComment(text);
+              }
+            }}
+            multiline
+            maxLength={MAX_COMMENT_LENGTH}
+          />
+          {comment.length > 0 && (
+            <Text style={[
+              styles.charCount,
+              comment.length > MAX_COMMENT_LENGTH * 0.9 && styles.charCountWarning,
+              comment.length === MAX_COMMENT_LENGTH && styles.charCountMax
+            ]}>
+              {comment.length}/{MAX_COMMENT_LENGTH}
+            </Text>
+          )}
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!comment.trim() || submitting) && styles.sendButtonDisabled
+            ]}
+            onPress={handleAddComment}
+            disabled={submitting || !comment.trim()}
+          >
+            {submitting ? (
+              <Ionicons name="hourglass-outline" size={22} color="#FFFFFF" />
+            ) : (
+              <Ionicons name="send" size={22} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
         <View style={styles.commentsSection}>
           <View style={styles.commentsTitleContainer}>
-            <Ionicons name="chatbubbles" size={20} color={COLORS.primary || "#6C63FF"} />
-            <Text style={styles.sectionTitle}>
-              Comments
-            </Text>
+            <Ionicons name="chatbubbles" size={20} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Comments</Text>
             <View style={styles.commentBadge}>
               <Text style={styles.commentBadgeText}>{message.commentCount}</Text>
             </View>
@@ -187,7 +228,7 @@ const MessageDetailScreen = ({ route, navigation }) => {
           ) : (
             [...message.comments]
               .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-              .map((comment, index) => (
+              .map((comment) => (
                 <View key={comment.id} style={styles.comment}>
                   <View style={styles.commentBody}>
                     <View style={styles.commentHeader}>
@@ -219,55 +260,8 @@ const MessageDetailScreen = ({ route, navigation }) => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <View style={styles.commentInputWrapper}>
-        <View style={[
-          styles.commentInput,
-          focusedInput && styles.commentInputFocused
-        ]}>
-          <View style={styles.inputIconContainer}>
-            <Ionicons name="chatbox-outline" size={20} color={COLORS.primary || "#6C63FF"} />
-          </View>
-          <TextInput
-            style={styles.input}
-            placeholder="Add a comment..."
-            value={comment}
-            onChangeText={(text) => {
-              if (text.length <= MAX_COMMENT_LENGTH) {
-                setComment(text);
-              }
-            }}
-            onFocus={() => setFocusedInput(true)}
-            onBlur={() => setFocusedInput(false)}
-            multiline
-            maxLength={MAX_COMMENT_LENGTH}
-            placeholderTextColor="#A0A0A0"
-          />
-          {comment.length > 0 && (
-            <Text style={[
-              styles.charCount,
-              comment.length > MAX_COMMENT_LENGTH * 0.9 && styles.charCountWarning,
-              comment.length === MAX_COMMENT_LENGTH && styles.charCountMax
-            ]}>
-              {comment.length}/{MAX_COMMENT_LENGTH}
-            </Text>
-          )}
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!comment.trim() || submitting) && styles.sendButtonDisabled
-            ]}
-            onPress={handleAddComment}
-            disabled={submitting || !comment.trim()}
-          >
-            {submitting ? (
-              <Ionicons name="hourglass-outline" size={22} color="#FFFFFF" />
-            ) : (
-              <Ionicons name="send" size={22} color="#FFFFFF" />
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
+
+    </KeyboardAvoidingView>
   );
 };
 
@@ -275,24 +269,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F7FA",
-  },
-  headerButtons: {
-    flexDirection: "row",
-    marginRight: 8,
-    gap: 8,
-  },
-  headerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  editButton: {
-    backgroundColor: (COLORS.primary || "#6C63FF") + "15",
-  },
-  deleteButton: {
-    backgroundColor: COLORS.danger || "#FF6B6B",
   },
   messageCard: {
     backgroundColor: "#FFFFFF",
@@ -308,15 +284,6 @@ const styles = StyleSheet.create({
   messageHeader: {
     flexDirection: "row",
     marginBottom: 20,
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: (COLORS.primary || "#6C63FF") + "15",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
   },
   headerInfo: {
     flex: 1,
@@ -404,17 +371,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
-  commentIconWrapper: {
-    marginRight: 12,
-  },
-  commentIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: (COLORS.primary || "#6C63FF") + "15",
-    justifyContent: "center",
-    alignItems: "center",
-  },
   commentBody: {
     flex: 1,
   },
@@ -442,44 +398,39 @@ const styles = StyleSheet.create({
     color: "#34495E",
     lineHeight: 22,
   },
-  commentInputWrapper: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+  inputWrapper: {
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#E8E8E8",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    marginBottom:10,
+    paddingBottom: Platform.OS === "ios" ? 34 : 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 8,
+    borderRadius:20,
+    marginHorizontal:15
   },
-  commentInput: {
+  commentInputContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     backgroundColor: "#F8F9FA",
     borderRadius: 24,
     paddingHorizontal: 16,
+    paddingVertical: 8,
     borderWidth: 2,
     borderColor: "#E8E8E8",
-  },
-  commentInputFocused: {
-    borderColor: COLORS.primary || "#6C63FF",
-    backgroundColor: "#FFFFFF",
-  },
-  inputIconContainer: {
-    marginRight: 8,
   },
   input: {
     flex: 1,
     fontSize: 15,
     color: "#2C3E50",
-    paddingVertical: 12,
+    paddingVertical: 8,
     maxHeight: 100,
+    minHeight: 40,
   },
   sendButton: {
     width: 40,
@@ -504,6 +455,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#7F8C8D",
     marginRight: 8,
+    alignSelf: "flex-end",
+    marginBottom: 10,
   },
   charCountWarning: {
     color: "#F39C12",

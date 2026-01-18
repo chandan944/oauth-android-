@@ -16,8 +16,9 @@ import { getPublicDiaries } from "../../services/diaryService";
 import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import CommentsModal from "./CommentsModal";
 import { COLORS, MOOD_EMOJIS, MOOD_COLORS } from "../../utils/colors";
-import { formatDate, truncateText } from "../../utils/helpers";
+import { formatEntryDate, truncateText } from "../../utils/helpers";
 import { formatText } from "../../utils/formatText";
 
 const DiaryFeedScreen = ({ navigation, route }) => {
@@ -34,6 +35,14 @@ const DiaryFeedScreen = ({ navigation, route }) => {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+
+  // Comments modal states
+  const [selectedDiaryForComments, setSelectedDiaryForComments] = useState(null);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+
+  // You'll need to get this from your auth context/store
+  // For now, using a placeholder - replace with actual user email from auth
+  const currentUserEmail = "user@example.com"; // TODO: Get from auth context
 
   const PAGE_SIZE = 10;
 
@@ -174,6 +183,18 @@ const DiaryFeedScreen = ({ navigation, route }) => {
     setShowFilterModal(false);
   };
 
+  const openComments = (diary) => {
+    setSelectedDiaryForComments(diary);
+    setShowCommentsModal(true);
+  };
+
+  const handleCloseComments = () => {
+    setShowCommentsModal(false);
+    setSelectedDiaryForComments(null);
+    // Refresh the feed to update comment counts
+    onRefresh();
+  };
+
   const renderFooter = () => {
     if (!isLoadingMore) return null;
 
@@ -191,7 +212,7 @@ const DiaryFeedScreen = ({ navigation, route }) => {
         <View style={styles.authorInfo}>
           <View style={styles.authorTextContainer}>
             <Text style={styles.authorName}>{item.authorName}</Text>
-            <Text style={styles.date}>{formatDate(item.entryDate)}</Text>
+            <Text style={styles.date}>{formatEntryDate(item.entryDate)}</Text>
           </View>
         </View>
 
@@ -218,6 +239,19 @@ const DiaryFeedScreen = ({ navigation, route }) => {
           </Text>
         </View>
       )}
+
+      {/* Comment Button */}
+      <TouchableOpacity
+        style={styles.commentButton}
+        onPress={() => openComments(item)}
+      >
+        <Ionicons name="chatbubble-outline" size={20} color={COLORS.text} />
+        <Text style={styles.commentButtonText}>
+          {item.commentCount > 0 
+            ? `${item.commentCount} ${item.commentCount === 1 ? 'comment' : 'comments'}`
+            : 'Add a comment'}
+        </Text>
+      </TouchableOpacity>
     </Card>
   );
 
@@ -376,6 +410,16 @@ const DiaryFeedScreen = ({ navigation, route }) => {
           />
         }
       />
+
+      {/* Comments Modal */}
+      {showCommentsModal && selectedDiaryForComments && (
+        <CommentsModal
+          visible={showCommentsModal}
+          onClose={handleCloseComments}
+          diaryId={selectedDiaryForComments.id}
+          currentUserEmail={currentUserEmail}
+        />
+      )}
     </View>
   );
 };
@@ -547,6 +591,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.text,
     lineHeight: 18,
+  },
+  commentButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 12,
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  commentButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: "500",
   },
   footerLoader: {
     paddingVertical: 20,

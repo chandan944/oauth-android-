@@ -102,7 +102,7 @@ const ProfileScreen = () => {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={['#f7faf7', '#19ee23']}
+            colors={['#eecf1f', '#ec0808']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.logoutGradient}

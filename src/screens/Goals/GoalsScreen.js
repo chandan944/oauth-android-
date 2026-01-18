@@ -14,7 +14,7 @@ import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
-import { daysLeft, formatDate } from "../../utils/helpers";
+import { daysLeft, formatEntryDate , formatDate } from "../../utils/helpers";
 
 const GoalsScreen = ({ navigation }) => {
   const [goals, setGoals] = useState([]);
@@ -85,7 +85,7 @@ const GoalsScreen = ({ navigation }) => {
           <View style={styles.goalInfo}>
             <Text style={styles.goalTitle}>{item.title}</Text>
             <Text style={styles.goalDate}>
-              Target: {formatDate(item.targetDate)}
+              Target: {formatEntryDate(item.targetDate)}
             </Text>
           </View>
 

@@ -2,6 +2,62 @@ import api from './api';
 
 const API_URL = '/api/diaries';
 
+
+
+// Add these new functions to your existing diaryService.js
+
+// ============================================
+// 💬 ADD COMMENT TO DIARY
+// ============================================
+export const addComment = async (diaryId, content) => {
+  try {
+    const response = await api.post(`${API_URL}/${diaryId}/comments`, {
+      content,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ============================================
+// 📖 GET COMMENTS FOR DIARY
+// ============================================
+export const getComments = async (diaryId, page = 0, size = 20) => {
+  try {
+    const response = await api.get(`${API_URL}/${diaryId}/comments`, {
+      params: { page, size },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ============================================
+// 🔢 GET COMMENT COUNT
+// ============================================
+export const getCommentCount = async (diaryId) => {
+  try {
+    const response = await api.get(`${API_URL}/${diaryId}/comments/count`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ============================================
+// 🗑️ DELETE COMMENT
+// ============================================
+export const deleteComment = async (diaryId, commentId) => {
+  try {
+    await api.delete(`${API_URL}/${diaryId}/comments/${commentId}`);
+    return { success: true, message: 'Comment deleted successfully' };
+  } catch (error) {
+    throw error;
+  }
+};
+
 // ============================================
 // 📝 CREATE NEW DIARY
 // ============================================
@@ -76,4 +132,5 @@ export const deleteDiary = async (id) => {
   } catch (error) {
     throw error;
   }
+  
 };

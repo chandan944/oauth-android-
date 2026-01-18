@@ -24,8 +24,8 @@ export const formatText = (text) => {
           key={index}
           style={{
             fontWeight: "600",
-            color: "#ffef0d",
-            backgroundColor: "rgba(255,239,13,0.15)",
+            color: "#0f0f0c",
+            backgroundColor: "rgba(250, 234, 11, 0.15)",
             paddingHorizontal: 10,
             paddingVertical: 5,
             borderRadius: 16,
@@ -81,11 +81,11 @@ export const formatText = (text) => {
         <Text
           key={index}
           style={{
-            color: "red",
+            color: "#f3860a",
             fontWeight: "bold",
             textShadowColor: "red",
             textShadowOffset: { width: 0, height: 0 },
-            textShadowRadius: 6,
+            textShadowRadius: 2,
           }}
         >
           {part.slice(1, -1)}

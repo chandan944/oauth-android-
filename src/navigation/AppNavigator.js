@@ -18,6 +18,7 @@ import LoginScreen from "../screens/Auth/LoginScreen";
 import DiaryFeedScreen from "../screens/Diary/DiaryFeedScreen";
 import MyDiariesScreen from "../screens/Diary/MyDiariesScreen";
 import CreateDiaryScreen from "../screens/Diary/CreateDiaryScreen";
+import EditDiaryScreen from "../screens/Diary/EditDiaryScreen";
 
 // Analytics Screens
 import MoodAnalyticsScreen from "../screens/Analytics/MoodAnalyticsScreen";
@@ -64,8 +65,8 @@ const AuthStack = () => (
 const TodosStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: COLORS.success },
-      headerTintColor: COLORS.white,
+      headerStyle: { backgroundColor: "#FEF1E7" },
+      headerTintColor: COLORS.black,
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
@@ -78,7 +79,7 @@ const TodosStack = () => (
           <Ionicons 
             name="checkbox" 
             size={24} 
-            color={COLORS.white} 
+            color={COLORS.black} 
             style={{ marginLeft: 15 }} 
           />
         )
@@ -110,8 +111,8 @@ const TodosStack = () => (
 const DiaryStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: "#08FCFC" },
-      headerTintColor: "#4f5252",
+      headerStyle: { backgroundColor: "#864703" },
+      headerTintColor: "#f3f8f8",
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
@@ -124,7 +125,7 @@ const DiaryStack = () => (
           <Ionicons 
             name="home" 
             size={24} 
-            color= "#4f5252" 
+            color= "#f0f5f5" 
             style={{ marginLeft: 15 }} 
           />
         )
@@ -139,6 +140,11 @@ const DiaryStack = () => (
       name="CreateDiary"
       component={CreateDiaryScreen}
       options={{ title: "Create Diary" }}
+    />
+    <Stack.Screen
+      name="EditDiary"
+      component={EditDiaryScreen}
+      options={{ title: "Edit Diary" }}
     />
   </Stack.Navigator>
 );
@@ -177,7 +183,7 @@ const AnalyticsStack = () => (
 const MessagesStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: COLORS.black },
+      headerStyle: { backgroundColor: "#0D0C0D" },
       headerTintColor: COLORS.white,
       headerTitleStyle: { fontWeight: "bold" },
     }}
@@ -218,8 +224,8 @@ const MessagesStack = () => (
 const HabitsStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: COLORS.cardBg },
-      headerTintColor: COLORS.black,
+      headerStyle: { backgroundColor: "#F93434" },
+      headerTintColor: COLORS.white,
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
@@ -232,7 +238,7 @@ const HabitsStack = () => (
           <Ionicons 
             name="checkmark-circle" 
             size={24} 
-            color={COLORS.black} 
+            color={COLORS.white} 
             style={{ marginLeft: 15 }} 
           />
         )
@@ -259,7 +265,7 @@ const HabitsStack = () => (
 const GoalsStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerStyle: { backgroundColor: "#8AFF8A" },
+      headerStyle: { backgroundColor: "#F7E664" },
       headerTintColor: COLORS.white,
       headerTitleStyle: { fontWeight: "bold" },
     }}

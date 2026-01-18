@@ -14,7 +14,7 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
-import { formatDate, formatTime } from "../../utils/helpers";
+import { formatDate, formatEntryDate } from "../../utils/helpers";
 
 const TodoDetailScreen = ({ route, navigation }) => {
   const { todoId } = route.params;
@@ -188,7 +188,7 @@ const TodoDetailScreen = ({ route, navigation }) => {
               <Ionicons name="calendar" size={18} color={isOverdue ? COLORS.error : COLORS.grey} />
               <Text style={styles.detailLabel}>Due Date:</Text>
               <Text style={[styles.detailValue, isOverdue && styles.overdueText]}>
-                {formatDate(todo.dueDate)}
+                {formatEntryDate(todo.dueDate)}
               </Text>
             </View>
           )}

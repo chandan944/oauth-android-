@@ -16,7 +16,7 @@ import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS } from "../../utils/colors";
-import { formatDate } from "../../utils/helpers";
+import { formatEntryDate , formatDate } from "../../utils/helpers";
 
 const TodosScreen = ({ navigation }) => {
   const [todos, setTodos] = useState([]);
@@ -24,6 +24,7 @@ const TodosScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  console.log(todos)
   // Add Analytics button to header
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -191,7 +192,7 @@ const TodosScreen = ({ navigation }) => {
                           isOverdue && styles.overdueText,
                         ]}
                       >
-                        {formatDate(item.dueDate)}
+                        {formatEntryDate(item.dueDate)}
                       </Text>
                     </View>
                   )}

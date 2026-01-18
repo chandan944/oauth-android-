@@ -6,37 +6,13 @@ import {
   getToken,
   getUser,
   clearStorage,
+  isOnboardingComplete,
+  setOnboardingComplete,
 } from "../utils/storage";
 import api from "../services/api";
 
 const AuthContext = createContext();
 
-const [onboardingCompleted, setOnboardingCompleted] = useState(false);
-const [checkingOnboarding, setCheckingOnboarding] = useState(true);
-
-useEffect(() => {
-  checkOnboardingStatus();
-}, []);
-
-const checkOnboardingStatus = async () => {
-  try {
-    const completed = await AsyncStorage.getItem(ONBOARDING_KEY);
-    setOnboardingCompleted(completed === "true");
-  } catch (error) {
-    console.error("Error checking onboarding status:", error);
-  } finally {
-    setCheckingOnboarding(false);
-  }
-};
-
-const completeOnboarding = async () => {
-  try {
-    await AsyncStorage.setItem(ONBOARDING_KEY, "true");
-    setOnboardingCompleted(true);
-  } catch (error) {
-    console.error("Error saving onboarding status:", error);
-  }
-};
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -49,10 +25,33 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
   useEffect(() => {
     checkAuth();
+    checkOnboardingStatus();
   }, []);
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const completed = await isOnboardingComplete();
+      setOnboardingCompleted(completed);
+    } catch (error) {
+      console.error("Error checking onboarding status:", error);
+    } finally {
+      setCheckingOnboarding(false);
+    }
+  };
+
+  const completeOnboarding = async () => {
+    try {
+      await setOnboardingComplete();
+      setOnboardingCompleted(true);
+    } catch (error) {
+      console.error("Error saving onboarding status:", error);
+    }
+  };
 
   const checkAuth = async () => {
     console.log("🔍 Checking authentication status...");
@@ -195,12 +194,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    onboardingCompleted,
-    checkingOnboarding,
-    completeOnboarding,
     user,
     isLoading,
     isAuthenticated,
+    onboardingCompleted,
+    checkingOnboarding,
+    completeOnboarding,
     handleGoogleAuth,
     logout,
   };

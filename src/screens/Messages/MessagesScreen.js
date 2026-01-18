@@ -110,7 +110,7 @@ const MessagesScreen = ({ navigation }) => {
       </View>
 
       <Text style={styles.content}>
-        {formatText(truncateText(item.content, 120))}
+        {formatText(truncateText(item.content, 3000))}
       </Text>
 
       <View style={styles.footer}>

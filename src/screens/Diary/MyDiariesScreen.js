@@ -19,12 +19,20 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { COLORS, MOOD_EMOJIS, MOOD_COLORS } from "../../utils/colors";
 import { formatDate, truncateText } from "../../utils/helpers";
 import { formatText } from "../../utils/formatText";
+import CommentsModal from "./CommentsModal";
 
 const MyDiariesScreen = ({ navigation }) => {
   const [diaries, setDiaries] = useState([]);
   const [filteredDiaries, setFilteredDiaries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Comments modal states
+  const [selectedDiaryForComments, setSelectedDiaryForComments] = useState(null);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+
+  // You'll need to get this from your auth context/store
+  const currentUserEmail = "user@example.com"; // TODO: Get from auth context
 
   // Date Filter States
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -70,7 +78,6 @@ const MyDiariesScreen = ({ navigation }) => {
 
       const response = await getMyDiaries(page, PAGE_SIZE);
       
-      // Sort by date descending (newest first)
       const sortedDiaries = (response.content || []).sort((a, b) => {
         return new Date(b.entryDate) - new Date(a.entryDate);
       });
@@ -109,6 +116,29 @@ const MyDiariesScreen = ({ navigation }) => {
     if (!isLoadingMore && hasMore && !isFilterActive) {
       loadDiaries(currentPage + 1);
     }
+  };
+
+  const openComments = (diary) => {
+    setSelectedDiaryForComments(diary);
+    setShowCommentsModal(true);
+  };
+
+  const handleCloseComments = (updatedCommentCount) => {
+    // Update the comment count for the specific diary
+    if (selectedDiaryForComments && updatedCommentCount !== undefined) {
+      const updateDiaryCommentCount = (diaryList) => 
+        diaryList.map(diary => 
+          diary.id === selectedDiaryForComments.id 
+            ? { ...diary, commentCount: updatedCommentCount }
+            : diary
+        );
+      
+      setDiaries(updateDiaryCommentCount);
+      setFilteredDiaries(updateDiaryCommentCount);
+    }
+    
+    setShowCommentsModal(false);
+    setSelectedDiaryForComments(null);
   };
 
   const filterByDate = (date) => {
@@ -156,11 +186,6 @@ const MyDiariesScreen = ({ navigation }) => {
     filterByDate(selectedDate);
   };
 
-  // Replace the renderDiary function in MyDiariesScreen.js with this updated version:
-
-
-
-
   const handleDelete = (id) => {
     Alert.alert("Delete Diary", "Are you sure you want to delete this diary?", [
       { text: "Cancel", style: "cancel" },
@@ -191,75 +216,85 @@ const MyDiariesScreen = ({ navigation }) => {
     );
   };
 
-const renderDiary = ({ item }) => (
-  <Card>
-    <View style={styles.diaryHeader}>
-      <View
-        style={[
-          styles.moodBadge,
-          { backgroundColor: MOOD_COLORS[item.mood] + "20" },
-        ]}
-      >
-        <Text style={styles.moodEmoji}>{MOOD_EMOJIS[item.mood]}</Text>
-      </View>
-      <Text style={styles.date}>{formatDate(item.entryDate)}</Text>
-      
-      {/* Action buttons container */}
-      <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('EditDiary', { diary: item })}
-          style={styles.iconButton}
+  const renderDiary = ({ item }) => (
+    <Card>
+      <View style={styles.diaryHeader}>
+        <View
+          style={[
+            styles.moodBadge,
+            { backgroundColor: MOOD_COLORS[item.mood] + "20" },
+          ]}
         >
-          <Ionicons name="create-outline" size={20} color={COLORS.primary} />
-        </TouchableOpacity>
+          <Text style={styles.moodEmoji}>{MOOD_EMOJIS[item.mood]}</Text>
+        </View>
+        <Text style={styles.date}>{formatDate(item.entryDate)}</Text>
         
-        <TouchableOpacity 
-          onPress={() => handleDelete(item.id)}
-          style={styles.iconButton}
-        >
-          <Ionicons name="trash-outline" size={20} color={COLORS.error} />
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('EditDiary', { diary: item })}
+            style={styles.iconButton}
+          >
+            <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            onPress={() => handleDelete(item.id)}
+            style={styles.iconButton}
+          >
+            <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
 
-    <Text style={styles.title}>{item.title}</Text>
-    <Text style={styles.content}>
-      {formatText(truncateText(item.goodThings, 3000))}
-    </Text>
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.content}>
+        {formatText(truncateText(item.goodThings, 3000))}
+      </Text>
 
-    {item.badThings && (
-      <View style={styles.challengesSection}>
-        <Text style={styles.challengesLabel}>Challenges:</Text>
-        <Text style={styles.challengesText}>
-          {formatText(truncateText(item.badThings, 3000))}
-        </Text>
-      </View>
-    )}
+      {item.badThings && (
+        <View style={styles.challengesSection}>
+          <Text style={styles.challengesLabel}>Challenges:</Text>
+          <Text style={styles.challengesText}>
+            {formatText(truncateText(item.badThings, 3000))}
+          </Text>
+        </View>
+      )}
 
-    <View style={styles.footer}>
-      <View
-        style={[
-          styles.badge,
-          item.visibility === "PUBLIC"
-            ? styles.publicBadge
-            : styles.privateBadge,
-        ]}
-      >
-        <Ionicons
-          name={
+      <View style={styles.footer}>
+        <View
+          style={[
+            styles.badge,
             item.visibility === "PUBLIC"
-              ? "globe-outline"
-              : "lock-closed-outline"
-          }
-          size={14}
-          color={COLORS.white}
-        />
-        <Text style={styles.badgeText}>{item.visibility}</Text>
+              ? styles.publicBadge
+              : styles.privateBadge,
+          ]}
+        >
+          <Ionicons
+            name={
+              item.visibility === "PUBLIC"
+                ? "globe-outline"
+                : "lock-closed-outline"
+            }
+            size={14}
+            color={COLORS.white}
+          />
+          <Text style={styles.badgeText}>{item.visibility}</Text>
+        </View>
       </View>
-    </View>
-  </Card>
-);
 
+      <TouchableOpacity
+        style={styles.commentButton}
+        onPress={() => openComments(item)}
+      >
+        <Ionicons name="chatbubble-outline" size={20} color={COLORS.text} />
+        <Text style={styles.commentButtonText}>
+          {item.commentCount > 0 
+            ? `${item.commentCount} ${item.commentCount === 1 ? 'comment' : 'comments'}`
+            : 'Add a comment'}
+        </Text>
+      </TouchableOpacity>
+    </Card>
+  );
 
   if (loading && currentPage === 0) return <LoadingSpinner />;
 
@@ -293,7 +328,6 @@ const renderDiary = ({ item }) => (
             )}
           </View>
         </View>
-        
       </View>
 
       {showDatePicker && (
@@ -346,6 +380,15 @@ const renderDiary = ({ item }) => (
           />
         }
       />
+
+      {showCommentsModal && selectedDiaryForComments && (
+        <CommentsModal
+          visible={showCommentsModal}
+          onClose={handleCloseComments}
+          diaryId={selectedDiaryForComments.id}
+          currentUserEmail={currentUserEmail}
+        />
+      )}
     </View>
   );
 };
@@ -365,10 +408,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  headerSubtext: {
-    fontSize: 12,
-    color: COLORS.textLight,
-    marginLeft: 28,
+  commentButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 12,
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  commentButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: "500",
   },
   filterContainer: {
     flexDirection: "row",
@@ -389,7 +441,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.primary + "30",
   },
-  
   dateButtonText: {
     marginLeft: 8,
     fontSize: 14,
@@ -476,6 +527,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textLight,
   },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+  },
   title: {
     fontSize: 18,
     fontWeight: "bold",
@@ -540,7 +601,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textLight,
   },
-
 });
 
 export default MyDiariesScreen;
